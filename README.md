@@ -1,6 +1,60 @@
-# Getting Started with Create React App
+# PartSelect AI Chat Agent
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An intelligent chat agent for PartSelect e-commerce website, focusing on Refrigerator and Dishwasher parts. Built with modern ALM (Augmented Language Model) architecture using DeepSeek integration.
+
+## 🚀 Project Structure
+
+```
+partselect-chat/
+├── partselect-chat-backend/          # Node.js + TypeScript backend
+│   ├── src/
+│   │   ├── agents/                   # ReAct agent architecture
+│   │   ├── tools/                    # Self-supervised tool learning
+│   │   ├── retrieval/                # Hybrid dense+sparse retrieval
+│   │   ├── services/                 # Business logic services
+│   │   ├── routes/                   # Fastify API routes
+│   │   └── types/                    # TypeScript schemas
+│   ├── drizzle/                      # Database schema & migrations
+│   └── data/                         # Product data & processing
+├── src/                              # React frontend
+├── public/                           # Static assets
+└── docs/                            # Documentation
+```
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Framework**: Fastify (high-performance Node.js)
+- **Database**: SQLite with Drizzle ORM
+- **AI/ML**: DeepSeek API integration (required)
+- **Real-time**: Socket.io
+- **Validation**: Zod schemas
+
+### Frontend  
+- **Framework**: React 18
+- **Styling**: Tailwind CSS with PartSelect branding
+- **Forms**: React Hook Form + Zod validation
+- **Icons**: Lucide React
+- **Real-time**: Socket.io Client
+
+## 🎯 Core Features
+
+1. **Product Discovery** - Natural language search for appliance parts
+2. **Compatibility Verification** - Clear yes/no answers for part/model combinations  
+3. **Installation Guidance** - Step-by-step instructions with tool requirements
+4. **Troubleshooting Support** - Symptom-based diagnosis and part recommendations
+5. **Order & Customer Support** - Order status, returns, warranty information
+6. **Expert Recommendations** - Professional installation guidance
+
+## 📋 Required Test Cases
+
+- ✅ "How can I install part number PS11752778?"
+- ✅ "Is this part compatible with my WDT780SAEM1 model?"
+- ✅ "The ice maker on my Whirlpool fridge is not working. How can I fix it?"
+
+---
+
+*This project was bootstrapped with Create React App and enhanced with modern ALM architecture.*
 
 ## Available Scripts
 
