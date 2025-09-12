@@ -45,14 +45,14 @@ server.get('/health', async (request, reply) => {
   }
 });
 
-// API routes placeholder
-server.get('/api/chat/health', async (request, reply) => {
-  return { 
-    status: 'ready', 
-    message: 'PartSelect AI Chat Agent Ready',
-    features: ['DeepSeek Integration', 'Product Search', 'Compatibility Check', 'Installation Guides']
-  };
-});
+// Register chat routes
+import { chatRoutes } from './routes/chat.js';
+import { AgentService } from './services/AgentService.js';
+
+server.register(chatRoutes);
+
+// Initialize Agent Service for Socket.io
+const agentService = new AgentService();
 
 // Initialize Socket.io before starting server
 const io = new Server({
@@ -62,28 +62,52 @@ const io = new Server({
   }
 });
 
-// Socket.io event handlers
+// Socket.io event handlers with ReAct agent integration
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
   
   socket.emit('connection_status', { 
     status: 'connected', 
-    message: 'Connected to PartSelect AI Assistant' 
+    message: 'Connected to PartSelect AI Assistant with ReAct Agent' 
   });
 
   socket.on('chat_message', async (data) => {
     console.log('Received message:', data);
     
-    // TODO: Phase 2 - Process with DeepSeek AI agent
-    // Placeholder response for now
-    setTimeout(() => {
+    try {
+      // Process message through ReAct agent
+      const response = await agentService.processMessage({
+        message: data.message,
+        sessionId: data.sessionId || `socket_${socket.id}`,
+        context: { socketId: socket.id, ...data.context },
+        userPreferences: data.userPreferences
+      });
+
+      // Emit the agent response
       socket.emit('ai_response', {
         id: Date.now().toString(),
-        content: 'This is a placeholder response. DeepSeek AI integration will be implemented in Phase 2.',
-        metadata: { type: 'placeholder' },
+        content: response.finalAnswer,
+        metadata: {
+          reasoning: response.reasoning,
+          confidence: response.confidence,
+          ...response.metadata
+        },
         timestamp: new Date().toISOString()
       });
-    }, 1000);
+
+    } catch (error) {
+      console.error('Error processing chat message:', error);
+      
+      socket.emit('ai_response', {
+        id: Date.now().toString(),
+        content: 'I encountered an error while processing your request. Please try again.',
+        metadata: { 
+          error: true, 
+          errorMessage: error.message 
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   socket.on('disconnect', () => {
