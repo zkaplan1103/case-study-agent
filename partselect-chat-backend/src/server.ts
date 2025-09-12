@@ -54,48 +54,51 @@ server.get('/api/chat/health', async (request, reply) => {
   };
 });
 
+// Initialize Socket.io before starting server
+const io = new Server({
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Socket.io event handlers
+io.on('connection', (socket) => {
+  console.log(`Client connected: ${socket.id}`);
+  
+  socket.emit('connection_status', { 
+    status: 'connected', 
+    message: 'Connected to PartSelect AI Assistant' 
+  });
+
+  socket.on('chat_message', async (data) => {
+    console.log('Received message:', data);
+    
+    // TODO: Phase 2 - Process with DeepSeek AI agent
+    // Placeholder response for now
+    setTimeout(() => {
+      socket.emit('ai_response', {
+        id: Date.now().toString(),
+        content: 'This is a placeholder response. DeepSeek AI integration will be implemented in Phase 2.',
+        metadata: { type: 'placeholder' },
+        timestamp: new Date().toISOString()
+      });
+    }, 1000);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
+});
+
 // Start server with Socket.io
 const start = async () => {
   try {
     const port = parseInt(process.env.PORT || '3001');
     await server.listen({ port, host: '0.0.0.0' });
     
-    // Initialize Socket.io
-    const io = new Server(server.server, {
-      cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-        methods: ['GET', 'POST']
-      }
-    });
-
-    // Socket.io event handlers
-    io.on('connection', (socket) => {
-      console.log(`Client connected: ${socket.id}`);
-      
-      socket.emit('connection_status', { 
-        status: 'connected', 
-        message: 'Connected to PartSelect AI Assistant' 
-      });
-
-      socket.on('chat_message', async (data) => {
-        console.log('Received message:', data);
-        
-        // TODO: Phase 2 - Process with DeepSeek AI agent
-        // Placeholder response for now
-        setTimeout(() => {
-          socket.emit('ai_response', {
-            id: Date.now().toString(),
-            content: 'This is a placeholder response. DeepSeek AI integration will be implemented in Phase 2.',
-            metadata: { type: 'placeholder' },
-            timestamp: new Date().toISOString()
-          });
-        }, 1000);
-      });
-
-      socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
-      });
-    });
+    // Attach Socket.io to the server
+    io.attach(server.server);
     
     console.log(`🚀 PartSelect Chat Backend running on port ${port}`);
     console.log(`🔌 Socket.io enabled for real-time communication`);

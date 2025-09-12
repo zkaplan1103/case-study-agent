@@ -6,21 +6,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // PartSelect brand colors (approximated)
-        'partselect': {
-          'blue': '#1e40af',
-          'light-blue': '#3b82f6',
-          'gray': '#6b7280',
-          'light-gray': '#f3f4f6',
-          'dark': '#1f2937',
-        }
+        'partselect-blue': '#1e40af',
+        'partselect-light-blue': '#3b82f6',
+        'partselect-gray': '#6b7280',
       },
       fontFamily: {
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        'inter': ['Inter', 'sans-serif'],
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [],
 }
+
