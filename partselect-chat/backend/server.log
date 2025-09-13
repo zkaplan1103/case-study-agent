@@ -1,0 +1,80 @@
+
+> partselect-chat-backend@1.0.0 dev
+> ts-node src/server.ts
+
+[dotenv@17.2.2] injecting env (5) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+⚠️ No DeepSeek API key provided, using intelligent fallback mode
+✅ SearchService initialized with 10 products
+✅ SearchService initialized with 10 products
+🔧 Registered tool: ProductSearch
+🔧 Registered tool: CompatibilityCheck
+🔧 Registered tool: InstallationGuide
+🔧 Registered tool: TroubleshootingGuide
+✅ PartSelectAgent initialized with tools: ProductSearch, CompatibilityCheck, InstallationGuide, TroubleshootingGuide
+🚀 PartSelect Chat Backend Server Started
+=====================================
+📍 Port: 3001
+🌍 Environment: development
+🔑 DeepSeek API: ⚠️ Not configured (fallback mode)
+🛡️ CORS Origins: http://localhost:3000
+⏱️ Rate Limit: 100 requests per 900s
+=====================================
+🔧 Available Tools: ProductSearch, CompatibilityCheck, InstallationGuide, TroubleshootingGuide
+📊 Product Database: 10 products loaded
+=====================================
+🌐 API Endpoints:
+  POST /api/chat - Main chat interface
+  GET  /api/products/search - Product search
+  GET  /api/products/:partNumber - Product details
+  POST /api/compatibility - Compatibility check
+  GET  /api/installation/:partNumber - Installation guide
+  GET  /health - Health check
+  GET  /api/stats - System statistics
+=====================================
+✅ Server ready to accept connections
+📥 2025-09-13T19:29:01.006Z GET /socket.io/ - ::1
+📥 2025-09-13T19:29:07.415Z GET /socket.io/ - ::1
+📥 2025-09-13T19:29:13.019Z GET /socket.io/ - ::1
+📥 2025-09-13T19:29:16.826Z POST /api/chat - ::1
+Request body: {
+  message: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?...',
+  sessionId: 'debug'
+}
+🤖 Processing chat request...
+🤖 Starting ReAct processing for: "The ice maker on my Whirlpool fridge is not working. How can I fix it?"
+💭 Thought 1: User query: "The ice maker on my Whirlpool fridge is not working. How can I fix it?". I need to analyze this request and determine the appropriate tools to use.
+💭 Thought 2: Analyzing user message: "The ice maker on my Whirlpool fridge is not working. How can I fix it?". Detected intent: troubleshooting
+🔧 Action 3: Using TroubleshootingGuide with parameters: {
+  symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
+  category: 'refrigerator'
+}
+🔨 Executing TroubleshootingGuide...
+🔍 TroubleshootingTool executing with parameters: {
+  symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
+  category: 'refrigerator'
+}
+👁️ Observation 4: Tool TroubleshootingGuide executed successfully
+💭 Thought 5: Generating final response for troubleshooting query with 1 tool results and 0 products.
+✅ ReAct processing completed in 1 iterations
+✅ Chat request processed successfully - 2 tools used
+📥 2025-09-13T19:29:22.083Z GET /socket.io/ - ::1
+📥 2025-09-13T19:29:28.237Z GET /socket.io/ - ::1
+📥 2025-09-13T19:29:38.308Z GET /socket.io/ - ::1
+📥 2025-09-13T19:29:51.997Z GET /socket.io/ - ::1
+📥 2025-09-13T19:30:03.991Z GET /socket.io/ - ::1
+📥 2025-09-13T19:30:16.987Z GET /socket.io/ - ::1
+📥 2025-09-13T19:30:22.991Z GET /socket.io/ - ::1
+📥 2025-09-13T19:30:36.990Z GET /socket.io/ - ::1
+📥 2025-09-13T19:30:42.991Z GET /socket.io/ - ::1
+📥 2025-09-13T19:30:58.990Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:09.257Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:17.066Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:23.095Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:37.943Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:43.176Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:49.490Z GET /socket.io/ - ::1
+📥 2025-09-13T19:31:54.977Z GET /socket.io/ - ::1
+📥 2025-09-13T19:32:03.995Z GET /socket.io/ - ::1
+📥 2025-09-13T19:32:10.830Z GET /socket.io/ - ::1
+📥 2025-09-13T19:32:15.979Z GET /socket.io/ - ::1
+📥 2025-09-13T19:32:22.281Z GET /socket.io/ - ::1

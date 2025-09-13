@@ -4,7 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,13 +14,10 @@
     "declarationMap": true,
     "sourceMap": true,
     "removeComments": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "types": ["node", "better-sqlite3"]
+    "types": ["node"]
   },
   "include": [
-    "src/**/*",
-    "drizzle/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
