@@ -1,39 +1,22 @@
 import { z } from 'zod';
-import { sampleProducts } from '../data/sampleProducts';
+import { SimpleSearchService } from '../services/SimpleSearchService';
 
-// Product search input schema
+// Simplified product search input schema
 export const ProductSearchInputSchema = z.object({
   query: z.string().min(1, "Search query is required"),
-  category: z.enum(['refrigerator', 'dishwasher', 'all']).optional().default('all'),
-  priceRange: z.object({
-    min: z.number().optional(),
-    max: z.number().optional()
-  }).optional(),
-  brand: z.string().optional(),
-  limit: z.number().min(1).max(50).optional().default(10)
+  category: z.enum(['refrigerator', 'dishwasher', 'all']).optional().default('all')
 });
 
 export type ProductSearchInput = z.infer<typeof ProductSearchInputSchema>;
 
-export interface ProductSearchResult {
-  partNumber: string;
-  name: string;
-  description: string;
-  category: string;
-  brand: string;
-  price: number;
-  availability: string;
-  relevanceScore: number;
-  compatibleModels: string[];
-}
-
 /**
- * Product Search Tool - Semantic search using vector embeddings
- * Handles product discovery with filtering and relevance scoring
+ * Simple Product Search Tool for Instalily requirements
+ * Focused on the 3 core test queries
  */
 export class ProductSearchTool {
   private name = 'search_parts';
-  private description = 'Search for appliance parts by part number, model number, or description with advanced filtering';
+  private description = 'Search for appliance parts by part number, model, or keywords';
+  private searchService = new SimpleSearchService();
 
   getName(): string {
     return this.name;
@@ -48,155 +31,45 @@ export class ProductSearchTool {
   }
 
   /**
-   * Execute product search with semantic ranking and filtering
+   * Execute part search - simplified for core functionality
    */
-  async execute(input: ProductSearchInput): Promise<ProductSearchResult[]> {
-    const validatedInput = ProductSearchInputSchema.parse(input);
-    const { query, category, priceRange, brand, limit } = validatedInput;
+  async execute(input: Record<string, any>): Promise<string> {
+    try {
+      const { query, category } = ProductSearchInputSchema.parse(input);
+      
+      console.log(`ProductSearchTool: Searching for "${query}" in category "${category}"`);
+      
+      // Use the SimpleSearchService for consistent searching
+      const searchResults = this.searchService.search(query, category);
 
-    console.log(`ProductSearchTool: Searching for "${query}" with filters:`, {
-      category, priceRange, brand, limit
-    });
-
-    const results = sampleProducts
-      .filter(product => {
-        // Category filter
-        if (category !== 'all' && product.category !== category) {
-          return false;
-        }
-
-        // Brand filter
-        if (brand && product.brand.toLowerCase() !== brand.toLowerCase()) {
-          return false;
-        }
-
-        // Price range filter
-        if (priceRange) {
-          if (priceRange.min && product.price < priceRange.min) {
-            return false;
-          }
-          if (priceRange.max && product.price > priceRange.max) {
-            return false;
-          }
-        }
-
-        return true;
-      })
-      .map(product => {
-        const relevanceScore = this.calculateRelevanceScore(query, product);
-        return {
-          partNumber: product.partNumber,
-          name: product.name,
-          description: product.description,
-          category: product.category,
-          brand: product.brand,
-          price: product.price,
-          availability: product.availability,
-          relevanceScore,
-          compatibleModels: product.compatibleModels
-        };
-      })
-      .filter(result => result.relevanceScore > 0)
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, limit);
-
-    console.log(`ProductSearchTool: Found ${results.length} results`);
-    
-    return results;
-  }
-
-  /**
-   * Calculate relevance score using semantic matching
-   * In a real implementation, this would use vector embeddings
-   */
-  private calculateRelevanceScore(query: string, product: any): number {
-    const searchQuery = query.toLowerCase();
-    let score = 0;
-
-    // Exact part number match gets highest score
-    if (product.partNumber.toLowerCase() === searchQuery) {
-      score += 100;
-    } else if (product.partNumber.toLowerCase().includes(searchQuery)) {
-      score += 80;
-    }
-
-    // Product name matching
-    if (product.name.toLowerCase().includes(searchQuery)) {
-      score += 60;
-    }
-
-    // Description matching
-    if (product.description.toLowerCase().includes(searchQuery)) {
-      score += 40;
-    }
-
-    // Compatible model matching
-    if (product.compatibleModels.some((model: string) => 
-        model.toLowerCase().includes(searchQuery))) {
-      score += 70;
-    }
-
-    // Symptom matching
-    if (product.symptoms && product.symptoms.some((symptom: string) => 
-        symptom.toLowerCase().includes(searchQuery) || 
-        searchQuery.includes(symptom.toLowerCase()))) {
-      score += 50;
-    }
-
-    // Keyword matching for appliance types
-    const applianceKeywords = ['ice maker', 'door seal', 'water filter', 'wash pump'];
-    applianceKeywords.forEach(keyword => {
-      if (searchQuery.includes(keyword.toLowerCase()) && 
-          product.name.toLowerCase().includes(keyword.toLowerCase())) {
-        score += 30;
-      }
-    });
-
-    return score;
-  }
-
-  /**
-   * Get search suggestions based on partial query
-   */
-  async getSuggestions(partialQuery: string): Promise<string[]> {
-    const query = partialQuery.toLowerCase();
-    const suggestions = new Set<string>();
-
-    sampleProducts.forEach(product => {
-      // Part number suggestions
-      if (product.partNumber.toLowerCase().startsWith(query)) {
-        suggestions.add(product.partNumber);
+      if (searchResults.length === 0) {
+        return `No parts found matching "${query}". Please check the part number or try a different search term.`;
       }
 
-      // Product name suggestions
-      const nameWords = product.name.toLowerCase().split(' ');
-      nameWords.forEach(word => {
-        if (word.startsWith(query) && word.length > 2) {
-          suggestions.add(word);
+      // Format results for agent
+      let response = `Found ${searchResults.length} matching parts:\n\n`;
+      
+      for (const result of searchResults.slice(0, 5)) {
+        const p = result.product;
+        response += `**${p.partNumber} - ${p.name}**\n`;
+        response += `Category: ${p.category}\n`;
+        response += `Brand: ${p.brand}\n`;
+        response += `Price: $${p.price}\n`;
+        response += `Availability: ${p.availability}\n`;
+        response += `Match reason: ${result.reason}\n`;
+        
+        if (p.compatibleModels.length > 0) {
+          response += `Compatible models: ${p.compatibleModels.slice(0, 3).join(', ')}\n`;
         }
-      });
+        
+        response += `\n`;
+      }
 
-      // Model number suggestions
-      product.compatibleModels.forEach(model => {
-        if (model.toLowerCase().startsWith(query)) {
-          suggestions.add(model);
-        }
-      });
-    });
+      return response;
 
-    return Array.from(suggestions).slice(0, 10);
-  }
-
-  /**
-   * Get popular search terms for the category
-   */
-  getPopularSearches(category: 'refrigerator' | 'dishwasher' | 'all' = 'all'): string[] {
-    const popularTerms = {
-      refrigerator: ['ice maker', 'water filter', 'door seal', 'temperature sensor'],
-      dishwasher: ['wash pump', 'door seal', 'drain hose', 'control board'],
-      all: ['ice maker', 'door seal', 'water filter', 'wash pump', 'control board']
-    };
-
-    return popularTerms[category] || popularTerms.all;
+    } catch (error: any) {
+      console.error('ProductSearchTool error:', error);
+      return `Error searching for parts: ${error.message}`;
+    }
   }
 }

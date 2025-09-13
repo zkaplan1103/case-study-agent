@@ -1,135 +1,101 @@
-import fastify from 'fastify';
-import cors from '@fastify/cors';
-import rateLimit from '@fastify/rate-limit';
+import express from 'express';
+import cors from 'cors';
 import { config } from 'dotenv';
-import { Server } from 'socket.io';
+import { PartSelectAgent } from './agents/PartSelectAgent';
+import { DeepSeekService } from './services/DeepSeekService';
 
 // Load environment variables
 config();
 
-const server = fastify({ 
-  logger: true 
-});
+const app = express();
+const PORT = process.env.PORT || 3001;
 
-// Register plugins
-server.register(cors, {
+// Initialize services
+const deepSeekService = new DeepSeekService();
+const partSelectAgent = new PartSelectAgent(deepSeekService);
+
+// Middleware
+app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
+}));
+app.use(express.json());
+
+// Basic request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
 });
 
-server.register(rateLimit, {
-  max: parseInt(process.env.RATE_LIMIT_MAX || '100'),
-  timeWindow: parseInt(process.env.RATE_LIMIT_TIME_WINDOW || '900000')
-});
-
-// Health check endpoint with database connection test
-server.get('/health', async (request, reply) => {
-  try {
-    // Import db and schema here to avoid circular dependency issues
-    const { db, chatSessions } = await import('./db/index');
-    // Test database connection
-    const result = await db.select().from(chatSessions).limit(1);
-    return { 
-      status: 'ok', 
-      message: 'PartSelect Chat Backend Running',
-      database: 'connected',
-      timestamp: new Date().toISOString()
-    };
-  } catch (error: any) {
-    return { 
-      status: 'warning', 
-      message: 'PartSelect Chat Backend Running',
-      database: 'connection_issue',
-      error: error.message || 'Unknown error'
-    };
-  }
-});
-
-// Register chat routes
-import { chatRoutes } from './routes/chat';
-import { AgentService } from './services/AgentService';
-
-server.register(chatRoutes);
-
-// Initialize Agent Service for Socket.io
-const agentService = new AgentService();
-
-// Initialize Socket.io before starting server
-const io = new Server({
-  cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST']
-  }
-});
-
-// Socket.io event handlers with ReAct agent integration
-io.on('connection', (socket) => {
-  console.log(`Client connected: ${socket.id}`);
-  
-  socket.emit('connection_status', { 
-    status: 'connected', 
-    message: 'Connected to PartSelect AI Assistant with ReAct Agent' 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    service: 'PartSelect Chat Backend'
   });
+});
 
-  socket.on('chat_message', async (data) => {
-    console.log('Received message:', data);
+// Simple chat endpoint - handles all chat messages
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message, sessionId } = req.body;
     
-    try {
-      // Process message through ReAct agent
-      const response = await agentService.processMessage({
-        message: data.message,
-        sessionId: data.sessionId || `socket_${socket.id}`,
-        context: { socketId: socket.id, ...data.context },
-        userPreferences: data.userPreferences
-      });
-
-      // Emit the agent response
-      socket.emit('ai_response', {
-        id: Date.now().toString(),
-        content: response.finalAnswer,
-        metadata: {
-          reasoning: response.reasoning,
-          confidence: response.confidence,
-          ...response.metadata
-        },
-        timestamp: new Date().toISOString()
-      });
-
-    } catch (error: any) {
-      console.error('Error processing chat message:', error);
-      
-      socket.emit('ai_response', {
-        id: Date.now().toString(),
-        content: 'I encountered an error while processing your request. Please try again.',
-        metadata: { 
-          error: true, 
-          errorMessage: error.message 
-        },
-        timestamp: new Date().toISOString()
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ 
+        error: 'Message is required and must be a string' 
       });
     }
-  });
 
-  socket.on('disconnect', () => {
-    console.log(`Client disconnected: ${socket.id}`);
+    console.log(`Processing chat message: "${message}"`);
+    
+    // Process message with PartSelect agent
+    const agentResponse = await partSelectAgent.process(message, {
+      sessionId: sessionId || 'default',
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({
+      response: agentResponse.finalAnswer,
+      reasoning: agentResponse.reasoning,
+      confidence: agentResponse.confidence,
+      sessionId: sessionId || 'default',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('Chat API error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Unable to process your request. Please try again.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Error handling middleware
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Server error:', error);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: 'Something went wrong processing your request'
   });
 });
 
-// Start server with Socket.io
-const start = async () => {
-  try {
-    const port = parseInt(process.env.PORT || '3001');
-    await server.listen({ port, host: '0.0.0.0' });
-    
-    // Attach Socket.io to the server
-    io.attach(server.server);
-    
-    console.log(`🚀 PartSelect Chat Backend running on port ${port}`);
-    console.log(`🔌 Socket.io enabled for real-time communication`);
-  } catch (err) {
-    server.log.error(err);
-    process.exit(1);
-  }
-};
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    message: `Route ${req.method} ${req.originalUrl} not found`
+  });
+});
 
-start();
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 PartSelect Chat Backend running on port ${PORT}`);
+  console.log(`📋 Health check: http://localhost:${PORT}/health`);
+  console.log(`💬 Chat API: http://localhost:${PORT}/api/chat`);
+  console.log(`🤖 DeepSeek integration: ${deepSeekService ? 'Ready' : 'Not configured'}`);
+});
+
+export default app;
