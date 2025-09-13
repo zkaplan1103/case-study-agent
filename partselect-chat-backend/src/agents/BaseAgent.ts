@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const ReasoningTraceSchema = z.object({
   thought: z.string(),
   action: z.string(),
-  actionInput: z.record(z.any()).optional(),
+  actionInput: z.record(z.string(), z.any()).optional(),
   observation: z.string().optional(),
   timestamp: z.string(),
 });
@@ -13,7 +13,7 @@ export const AgentResponseSchema = z.object({
   finalAnswer: z.string(),
   reasoning: z.array(ReasoningTraceSchema),
   confidence: z.number().min(0).max(1),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export type ReasoningTrace = z.infer<typeof ReasoningTraceSchema>;
@@ -39,49 +39,65 @@ export abstract class BaseAgent {
     let currentQuery = query;
     let iteration = 0;
 
-    while (iteration < this.maxIterations) {
-      // Generate reasoning step
-      const thought = await this.generateThought(currentQuery, reasoning, context);
-      
-      // Determine next action
-      const action = await this.determineAction(thought, reasoning);
-      
-      // Record reasoning step
-      const trace: ReasoningTrace = {
-        thought,
-        action: action.name,
-        actionInput: action.input,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Execute action and get observation
-      if (action.name === 'final_answer') {
-        // Agent has decided to provide final answer
-        return {
-          finalAnswer: action.input?.answer || thought,
-          reasoning,
-          confidence: this.calculateConfidence(reasoning),
-          metadata: { iterations: iteration + 1 }
+    try {
+      while (iteration < this.maxIterations) {
+        // Generate reasoning step
+        const thought = await this.generateThought(currentQuery, reasoning, context);
+        
+        // Determine next action
+        const action = await this.determineAction(thought, reasoning);
+        
+        // Record reasoning step
+        const trace: ReasoningTrace = {
+          thought,
+          action: action.name,
+          actionInput: action.input,
+          timestamp: new Date().toISOString(),
         };
+
+        // Execute action and get observation
+        if (action.name === 'final_answer') {
+          // Agent has decided to provide final answer
+          return {
+            finalAnswer: action.input?.answer || thought,
+            reasoning,
+            confidence: this.calculateConfidence(reasoning),
+            metadata: { iterations: iteration + 1 }
+          };
+        }
+
+        // Execute tool/action
+        const observation = await this.executeAction(action);
+        trace.observation = observation;
+        reasoning.push(trace);
+
+        // Update query for next iteration
+        currentQuery = this.updateQuery(currentQuery, observation, reasoning);
+        iteration++;
       }
 
-      // Execute tool/action
-      const observation = await this.executeAction(action);
-      trace.observation = observation;
-      reasoning.push(trace);
-
-      // Update query for next iteration
-      currentQuery = this.updateQuery(currentQuery, observation, reasoning);
-      iteration++;
+      // Max iterations reached - provide best answer
+      return {
+        finalAnswer: this.synthesizeFinalAnswer(reasoning),
+        reasoning,
+        confidence: this.calculateConfidence(reasoning),
+        metadata: { iterations: this.maxIterations, maxIterationsReached: true }
+      };
+    } catch (error: any) {
+      console.error(`Agent processing error: ${error.message}`);
+      return {
+        finalAnswer: error.message.includes('AI reasoning service') 
+          ? error.message 
+          : 'I encountered an error while processing your request. Please try again or contact support.',
+        reasoning,
+        confidence: 0.1,
+        metadata: { 
+          iterations: iteration, 
+          error: true, 
+          errorMessage: error.message 
+        }
+      };
     }
-
-    // Max iterations reached - provide best answer
-    return {
-      finalAnswer: this.synthesizeFinalAnswer(reasoning),
-      reasoning,
-      confidence: this.calculateConfidence(reasoning),
-      metadata: { iterations: this.maxIterations, maxIterationsReached: true }
-    };
   }
 
   // Abstract methods to be implemented by specific agents

@@ -1,13 +1,14 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { AgentService, ChatRequest } from '../services/AgentService.js';
+import { AgentService, ChatRequest } from '../services/AgentService';
+import { DeepSeekService } from '../services/DeepSeekService';
 import { z } from 'zod';
 
 // API request schemas
 const ChatMessageSchema = z.object({
   message: z.string(),
   sessionId: z.string(),
-  context: z.record(z.any()).optional(),
-  userPreferences: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
+  userPreferences: z.record(z.string(), z.any()).optional(),
 });
 
 const TestAgentSchema = z.object({
@@ -19,6 +20,7 @@ const TestAgentSchema = z.object({
  */
 export async function chatRoutes(fastify: FastifyInstance) {
   const agentService = new AgentService();
+  const deepSeekService = new DeepSeekService();
 
   // Main chat endpoint
   fastify.post<{
@@ -34,13 +36,13 @@ export async function chatRoutes(fastify: FastifyInstance) {
         data: response,
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Chat endpoint error:', error);
       
       reply.code(400);
       return {
         success: false,
-        error: error.message,
+        error: error?.message || 'Unknown error',
         timestamp: new Date().toISOString(),
       };
     }
@@ -56,7 +58,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         data: health,
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Agent health check error:', error);
       
       reply.code(500);
@@ -81,7 +83,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         },
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Tools endpoint error:', error);
       
       reply.code(500);
@@ -103,7 +105,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         data: agentInfo,
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Agent info endpoint error:', error);
       
       reply.code(500);
@@ -125,7 +127,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         data: stats,
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Stats endpoint error:', error);
       
       reply.code(500);
@@ -159,7 +161,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         },
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Test endpoint error:', error);
       
       reply.code(500);
@@ -181,8 +183,113 @@ export async function chatRoutes(fastify: FastifyInstance) {
         data: { message: 'Session cleanup completed' },
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       fastify.log.error('Cleanup endpoint error:', error);
+      
+      reply.code(500);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  });
+
+  // DeepSeek Integration Endpoints (Phase 2.2)
+
+  // DeepSeek health check
+  fastify.get('/api/v1/deepseek/health', async (request, reply) => {
+    try {
+      const health = await deepSeekService.healthCheck();
+      
+      return {
+        success: true,
+        data: health,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      fastify.log.error('DeepSeek health check error:', error);
+      
+      reply.code(500);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  });
+
+  // DeepSeek usage statistics
+  fastify.get('/api/v1/deepseek/stats', async (request, reply) => {
+    try {
+      const stats = await deepSeekService.getUsageStats();
+      
+      return {
+        success: true,
+        data: stats,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      fastify.log.error('DeepSeek stats error:', error);
+      
+      reply.code(500);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  });
+
+  // Test DeepSeek integration with Instalily test cases
+  fastify.post('/api/v1/deepseek/test', async (request, reply) => {
+    try {
+      const testResults = await deepSeekService.testIntegration();
+      
+      return {
+        success: true,
+        data: testResults,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      fastify.log.error('DeepSeek test error:', error);
+      
+      reply.code(500);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  });
+
+  // Direct DeepSeek completion endpoint (for testing)
+  fastify.post('/api/v1/deepseek/complete', async (request, reply) => {
+    try {
+      const { prompt, options } = request.body as any;
+      
+      if (!prompt) {
+        reply.code(400);
+        return {
+          success: false,
+          error: 'Prompt is required',
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      const response = await deepSeekService.generateCompletion(prompt, options || {});
+      
+      return {
+        success: true,
+        data: {
+          prompt,
+          response,
+          options: options || {}
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      fastify.log.error('DeepSeek completion error:', error);
       
       reply.code(500);
       return {

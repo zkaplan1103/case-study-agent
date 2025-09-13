@@ -6,13 +6,13 @@ export const ChatMessageSchema = z.object({
   sessionId: z.string(),
   role: z.enum(['user', 'assistant']),
   content: z.string(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   createdAt: z.date().optional(),
 });
 
 export const ChatSessionSchema = z.object({
   id: z.string(),
-  userPreferences: z.record(z.any()).optional(),
+  userPreferences: z.record(z.string(), z.any()).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
@@ -34,13 +34,13 @@ export const ProductSchema = z.object({
 export const ChatRequestSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
 });
 
 export const ChatResponseSchema = z.object({
   id: z.string(),
   content: z.string(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   timestamp: z.string(),
 });
 

@@ -26,7 +26,7 @@ server.register(rateLimit, {
 server.get('/health', async (request, reply) => {
   try {
     // Import db and schema here to avoid circular dependency issues
-    const { db, chatSessions } = await import('./db/index.js');
+    const { db, chatSessions } = await import('./db/index');
     // Test database connection
     const result = await db.select().from(chatSessions).limit(1);
     return { 
@@ -46,8 +46,8 @@ server.get('/health', async (request, reply) => {
 });
 
 // Register chat routes
-import { chatRoutes } from './routes/chat.js';
-import { AgentService } from './services/AgentService.js';
+import { chatRoutes } from './routes/chat';
+import { AgentService } from './services/AgentService';
 
 server.register(chatRoutes);
 
@@ -95,7 +95,7 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing chat message:', error);
       
       socket.emit('ai_response', {

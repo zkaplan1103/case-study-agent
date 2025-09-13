@@ -1,15 +1,14 @@
-import { PartSelectAgent } from '../agents/PartSelectAgent.js';
-import { PartSelectToolRegistry } from '../tools/PartSelectToolRegistry.js';
-import { DeepSeekService } from './DeepSeekService.js';
-import { AgentResponse } from '../agents/BaseAgent.js';
+import { PartSelectAgent } from '../agents/PartSelectAgent';
+import { DeepSeekService } from './DeepSeekService';
+import { AgentResponse } from '../agents/BaseAgent';
 import { z } from 'zod';
 
 // Chat processing request schema
 export const ChatRequestSchema = z.object({
   message: z.string(),
   sessionId: z.string(),
-  context: z.record(z.any()).optional(),
-  userPreferences: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
+  userPreferences: z.record(z.string(), z.any()).optional(),
 });
 
 export type ChatRequest = z.infer<typeof ChatRequestSchema>;
@@ -20,14 +19,12 @@ export type ChatRequest = z.infer<typeof ChatRequestSchema>;
  */
 export class AgentService {
   private agent: PartSelectAgent;
-  private toolRegistry: PartSelectToolRegistry;
   private deepSeekService: DeepSeekService;
   private sessionContexts = new Map<string, any>();
 
   constructor() {
     this.deepSeekService = new DeepSeekService();
-    this.toolRegistry = new PartSelectToolRegistry();
-    this.agent = new PartSelectAgent(this.toolRegistry, this.deepSeekService);
+    this.agent = new PartSelectAgent(this.deepSeekService);
   }
 
   /**
@@ -71,7 +68,7 @@ export class AgentService {
       };
 
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing message:', error);
       
       return {
@@ -90,7 +87,13 @@ export class AgentService {
    * Get available tools for debugging/monitoring
    */
   getAvailableTools(): Array<{ name: string; description: string }> {
-    return this.toolRegistry.listTools();
+    // Get tools from the agent's internal tools map
+    return [
+      { name: 'search_parts', description: 'Search for appliance parts by part number, model number, or description' },
+      { name: 'check_compatibility', description: 'Check if a specific part is compatible with an appliance model' },
+      { name: 'get_installation_guide', description: 'Retrieve step-by-step installation instructions for appliance parts' },
+      { name: 'diagnose_issue', description: 'Diagnose appliance issues through systematic troubleshooting' }
+    ];
   }
 
   /**
@@ -114,7 +117,7 @@ export class AgentService {
     sessions: { active: number };
   }> {
     const deepseekHealth = await this.deepSeekService.healthCheck();
-    const tools = this.toolRegistry.listTools();
+    const tools = this.getAvailableTools();
 
     return {
       agent: {
@@ -124,7 +127,7 @@ export class AgentService {
       deepseek: deepseekHealth,
       tools: {
         count: tools.length,
-        available: tools.map(t => t.name)
+        available: tools.map((t: { name: string; description: string }) => t.name)
       },
       sessions: {
         active: this.sessionContexts.size
@@ -227,7 +230,7 @@ export class AgentService {
           response,
           passed
         });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           query: testQuery,
           response: {

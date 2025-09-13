@@ -1,26 +1,42 @@
-import { BaseAgent, ReasoningTrace } from './BaseAgent.js';
-import { PartSelectToolRegistry } from '../tools/PartSelectToolRegistry.js';
-import { DeepSeekService } from '../services/DeepSeekService.js';
+import { BaseAgent, ReasoningTrace } from './BaseAgent';
+import { DeepSeekService } from '../services/DeepSeekService';
+import { ProductSearchTool } from '../tools/ProductSearchTool';
+import { CompatibilityTool } from '../tools/CompatibilityTool';
+import { InstallationTool } from '../tools/InstallationTool';
+import { TroubleshootingTool } from '../tools/TroubleshootingTool';
 
 /**
  * PartSelect-specialized ReAct agent for appliance parts assistance
  * Implements the core business logic for refrigerator and dishwasher support
  */
 export class PartSelectAgent extends BaseAgent {
-  private toolRegistry: PartSelectToolRegistry;
   private deepSeekService: DeepSeekService;
   private systemPrompt: string;
+  private tools: Map<string, any>;
 
-  constructor(toolRegistry: PartSelectToolRegistry, deepSeekService: DeepSeekService) {
+  constructor(deepSeekService: DeepSeekService) {
     super(
       'PartSelectAgent',
       'AI assistant specializing in refrigerator and dishwasher parts, compatibility, and installation guidance',
       6 // Allow more iterations for complex part searches
     );
     
-    this.toolRegistry = toolRegistry;
     this.deepSeekService = deepSeekService;
+    this.tools = new Map();
+    this.initializeTools();
     this.systemPrompt = this.buildSystemPrompt();
+  }
+
+  private initializeTools(): void {
+    const productSearchTool = new ProductSearchTool();
+    const compatibilityTool = new CompatibilityTool();
+    const installationTool = new InstallationTool();
+    const troubleshootingTool = new TroubleshootingTool();
+
+    this.tools.set(productSearchTool.getName(), productSearchTool);
+    this.tools.set(compatibilityTool.getName(), compatibilityTool);
+    this.tools.set(installationTool.getName(), installationTool);
+    this.tools.set(troubleshootingTool.getName(), troubleshootingTool);
   }
 
   protected async generateThought(
@@ -51,10 +67,15 @@ Thought:`;
         temperature: 0.7,
       });
       
+      // Check if we got a placeholder response (indicating DeepSeek is not available)
+      if (response.includes('placeholder') || response.includes('API key not provided')) {
+        throw new Error('DeepSeek API is not available');
+      }
+      
       return response.trim();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating thought:', error);
-      return `I need to analyze the user's query about ${this.extractKeyTerms(query).join(', ')}.`;
+      throw new Error('AI reasoning service is unavailable. Please configure DeepSeek API key.');
     }
   }
 
@@ -62,7 +83,10 @@ Thought:`;
     thought: string,
     reasoning: ReasoningTrace[]
   ): Promise<{ name: string; input?: Record<string, any> }> {
-    const availableTools = this.toolRegistry.listTools();
+    const availableTools = Array.from(this.tools.entries()).map(([name, tool]) => ({
+      name,
+      description: tool.getDescription()
+    }));
     const toolDescriptions = availableTools
       .map(tool => `${tool.name}: ${tool.description}`)
       .join('\n');
@@ -86,15 +110,32 @@ Format: ACTION_NAME|input_key1:value1,input_key2:value2
 Action:`;
 
     try {
+      console.log('Action prompt being sent to DeepSeek:', actionPrompt.substring(0, 200) + '...');
       const response = await this.deepSeekService.generateCompletion(actionPrompt, {
         maxTokens: 100,
         temperature: 0.3,
       });
+      console.log('DeepSeek action response:', response);
+
+      // Check if we got a placeholder response (indicating DeepSeek is not available)
+      if (response.includes('placeholder') || response.includes('API key not provided')) {
+        return { 
+          name: 'final_answer', 
+          input: { 
+            answer: 'I apologize, but my AI reasoning service is currently unavailable. Please ensure the DeepSeek API key is properly configured to enable full functionality.' 
+          } 
+        };
+      }
 
       return this.parseActionResponse(response.trim(), availableTools);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error determining action:', error);
-      return { name: 'final_answer', input: { answer: 'I encountered an error while processing your request.' } };
+      return { 
+        name: 'final_answer', 
+        input: { 
+          answer: 'I encountered an error while processing your request. Please try again or contact support if the issue persists.' 
+        } 
+      };
     }
   }
 
@@ -106,14 +147,14 @@ Action:`;
     }
 
     try {
-      const tool = this.toolRegistry.getTool(action.name);
+      const tool = this.tools.get(action.name);
       if (!tool) {
-        return `Tool '${action.name}' not found. Available tools: ${this.toolRegistry.listTools().map(t => t.name).join(', ')}`;
+        return `Tool '${action.name}' not found. Available tools: ${Array.from(this.tools.keys()).join(', ')}`;
       }
 
       const result = await tool.execute(action.input || {});
       return typeof result === 'string' ? result : JSON.stringify(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error executing action ${action.name}:`, error);
       return `Error executing ${action.name}: ${error.message}`;
     }
@@ -187,11 +228,13 @@ Think step by step and use available tools to provide accurate, helpful response
       // Validate tool exists
       const tool = availableTools.find(t => t.name === actionName);
       if (!tool) {
+        console.log(`Tool '${actionName}' not found. Available tools:`, availableTools.map(t => t.name));
+        console.log(`Full DeepSeek response was: "${response}"`);
         return { name: 'final_answer', input: { answer: 'I need to gather more information to help you.' } };
       }
 
       // Parse input parameters
-      let input: Record<string, any> = {};
+      const input: Record<string, any> = {};
       if (parts[1]) {
         const inputPairs = parts[1].split(',');
         inputPairs.forEach(pair => {
@@ -203,7 +246,7 @@ Think step by step and use available tools to provide accurate, helpful response
       }
 
       return { name: actionName, input };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error parsing action response:', error);
       return { name: 'final_answer', input: { answer: 'I need to process your request differently.' } };
     }
