@@ -1,10 +1,28 @@
-import { Tool, ToolResult } from '../types';
+import { Tool, ToolResult, ProductSearchParams, SearchResult, Product } from '../types';
 import { SearchService } from '../services/SearchService';
-import { ProductSearchToolSchema } from '../data/schemas';
 
+// Note: Using a type alias for clarity on the expected parameters
+type ProductSearchToolParameters = ProductSearchParams;
+
+/**
+ * A tool to search for appliance parts using various criteria such as part number,
+ * query, brand, or category. It interacts with the SearchService to perform the
+ * search and formats the results for the agent.
+ */
 export class ProductSearchTool implements Tool {
+  /**
+   * The name of the tool, used by the agent to identify it.
+   */
   public readonly name = 'ProductSearch';
-  public readonly description = 'Search for appliance parts by part number, product name, brand, or category (refrigerator/dishwasher)';
+
+  /**
+   * A detailed description of the tool's function.
+   */
+  public readonly description = 'Search for appliance parts by part number, product name, brand, or category (refrigerator/dishwasher).';
+
+  /**
+   * The expected parameters for the tool, including their type and description.
+   */
   public readonly parameters = {
     query: { type: 'string', description: 'Search query or product description' },
     partNumber: { type: 'string', description: 'Specific part number to search for' },
@@ -13,91 +31,80 @@ export class ProductSearchTool implements Tool {
     limit: { type: 'number', description: 'Maximum number of results (default: 5)' }
   };
 
+  /**
+   * @param searchService - An instance of the SearchService to be used for data retrieval.
+   */
   constructor(private searchService: SearchService) {}
 
+  /**
+   * Executes the product search based on the provided parameters.
+   * @param parameters - A record of string keys and any values. Expected to contain search criteria.
+   * @returns A promise that resolves to a ToolResult object indicating success or failure.
+   */
   public async execute(parameters: Record<string, any>): Promise<ToolResult> {
+    const searchParams: ProductSearchToolParameters = parameters;
+
+    console.log(`[ProductSearchTool] - Executing with parameters: ${JSON.stringify(searchParams)}`);
+
     try {
-      console.log('🔍 ProductSearchTool executing with parameters:', parameters);
-
-      // Validate parameters
-      const validation = ProductSearchToolSchema.safeParse(parameters);
-      if (!validation.success) {
-        return {
-          success: false,
-          error: `Invalid parameters: ${validation.error.errors.map(e => e.message).join(', ')}`
-        };
-      }
-
-      const searchParams = validation.data;
-
-      // Perform the search
       const searchResult = await this.searchService.searchProducts(searchParams);
 
-      // Format results for agent
-      const formattedResult = {
-        products: searchResult.products,
-        totalCount: searchResult.totalCount,
-        searchTerms: searchResult.searchTerms,
-        suggestions: searchResult.suggestions,
-        summary: this.generateSearchSummary(searchResult, searchParams)
-      };
+      const summary = this.generateSearchSummary(searchResult, searchParams);
 
-      console.log(`✅ ProductSearchTool found ${searchResult.products.length} products`);
-
+      console.log(`[ProductSearchTool] - Search complete. Found ${searchResult.totalCount} total results.`);
+      
       return {
         success: true,
-        data: formattedResult,
+        data: {
+          summary,
+          products: searchResult.products,
+          suggestions: searchResult.suggestions,
+        },
         metadata: {
-          searchType: this.determineSearchType(searchParams),
-          resultCount: searchResult.products.length
+          searchTerms: searchResult.searchTerms,
+          resultCount: searchResult.products.length,
+          totalCount: searchResult.totalCount
         }
       };
 
     } catch (error) {
-      console.error('❌ ProductSearchTool error:', error);
+      const errorMessage = `Search failed: ${(error as Error).message}`;
+      console.error(`[ProductSearchTool] - Execution failed due to an exception: ${errorMessage}`);
       return {
         success: false,
-        error: `Search failed: ${(error as Error).message}`
+        error: errorMessage
       };
     }
   }
 
-  private generateSearchSummary(searchResult: any, searchParams: any): string {
+  /**
+   * Generates a concise summary message from the search results.
+   * @param searchResult - The search result object.
+   * @param searchParams - The original search parameters.
+   * @returns A string summary of the search outcome.
+   */
+  private generateSearchSummary(searchResult: SearchResult, searchParams: ProductSearchParams): string {
     const { products, totalCount, searchTerms } = searchResult;
 
     if (totalCount === 0) {
-      return `No products found matching your search criteria. ${
-        searchResult.suggestions ? 
-        `Try: ${searchResult.suggestions.join(', ')}` : 
-        'Try broadening your search terms.'
-      }`;
+      if (searchResult.suggestions && searchResult.suggestions.length > 0) {
+        return `No products found matching your search criteria. Try: ${searchResult.suggestions.join(', ')}`;
+      }
+      return 'No products found matching your search criteria. Try broadening your search terms.';
     }
 
-    const searchDescription = searchTerms.length > 0 ? 
+    const description = searchTerms.length > 0 ? 
       `for ${searchTerms.join(', ')}` : 
       'in our database';
 
     if (totalCount === 1) {
       const product = products[0];
-      return `Found 1 product ${searchDescription}: ${product.name} (${product.partNumber}) - $${product.price} - ${product.availability}`;
+      return `Found 1 product ${description}: ${product.name} (${product.partNumber}).`;
     }
 
     const topProduct = products[0];
-    const summary = `Found ${totalCount} products ${searchDescription}. Top result: ${topProduct.name} (${topProduct.partNumber}) - $${topProduct.price}`;
-
-    if (searchParams.partNumber) {
-      return `${summary}. This appears to be ${searchParams.partNumber === topProduct.partNumber ? 'an exact' : 'a partial'} part number match.`;
-    }
+    const summary = `Found ${totalCount} products ${description}. Top result is ${topProduct.name} (${topProduct.partNumber}).`;
 
     return summary;
-  }
-
-  private determineSearchType(searchParams: any): string {
-    if (searchParams.partNumber) return 'part_number';
-    if (searchParams.query) return 'text_search';
-    if (searchParams.brand && searchParams.category) return 'brand_category';
-    if (searchParams.category) return 'category';
-    if (searchParams.brand) return 'brand';
-    return 'general';
   }
 }

@@ -88,7 +88,7 @@ export interface ChatResponse {
 // ReAct Agent interfaces
 export interface ReasoningStep {
   step: number;
-  type: 'thought' | 'action' | 'observation';
+  type: 'thought' | 'action' | 'observation' | 'error';
   content: string;
   tool?: string;
   parameters?: Record<string, any>;
@@ -145,10 +145,29 @@ export interface DeepSeekResponse {
   };
 }
 
+export interface DeepSeekErrorResponse {
+  error?: {
+    message?: string;
+    type?: string;
+    param?: string | null;
+    code?: string | null;
+  };
+}
+
 export interface LLMService {
   generateResponse(messages: DeepSeekMessage[]): Promise<string>;
   isAvailable(): boolean;
+  generateToolAction(userMessage: string, tools: Tool[]): Promise<AgentAction | null>;
+  getStatus(): ServiceStatus;
 }
+
+export interface ServiceStatus {
+  status: 'healthy' | 'unhealthy' | 'degraded';
+  configured: boolean;
+  details: string;
+  metadata?: any;
+}
+
 
 // Configuration interfaces
 export interface ServerConfig {

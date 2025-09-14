@@ -2,7 +2,7 @@
 > partselect-chat-backend@1.0.0 dev
 > ts-node src/server.ts
 
-[dotenv@17.2.2] injecting env (5) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.2] injecting env (5) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
 ⚠️ No DeepSeek API key provided, using intelligent fallback mode
 ✅ SearchService initialized with 10 products
 ✅ SearchService initialized with 10 products
@@ -32,13 +32,11 @@
   GET  /api/stats - System statistics
 =====================================
 ✅ Server ready to accept connections
-📥 2025-09-13T19:29:01.006Z GET /socket.io/ - ::1
-📥 2025-09-13T19:29:07.415Z GET /socket.io/ - ::1
-📥 2025-09-13T19:29:13.019Z GET /socket.io/ - ::1
-📥 2025-09-13T19:29:16.826Z POST /api/chat - ::1
+📥 2025-09-13T23:18:19.695Z GET /health - ::1
+📥 2025-09-13T23:18:28.896Z POST /api/chat - ::1
 Request body: {
   message: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?...',
-  sessionId: 'debug'
+  sessionId: 'debug_final'
 }
 🤖 Processing chat request...
 🤖 Starting ReAct processing for: "The ice maker on my Whirlpool fridge is not working. How can I fix it?"
@@ -53,28 +51,1191 @@ Request body: {
   symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
   category: 'refrigerator'
 }
+🔍 SearchService.searchTroubleshooting called with symptom: "The ice maker on my Whirlpool fridge is not working. How can I fix it?", category: "refrigerator"
+🔍 Available troubleshooting symptoms: 3
+📋 Available symptom: "Ice maker not producing ice" (category: refrigerator)
+📋 Available symptom: "Dishwasher not draining properly" (category: dishwasher)
+📋 Available symptom: "Refrigerator not cooling properly" (category: refrigerator)
+🔍 Checking symptom: "Ice maker not producing ice"
+   - Category match: true
+   - Description match: false
+   - Causes match: true
+   - Keywords match: true
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [ice, maker, not, producing, ice]
+   - Final match: true
+🔍 Checking symptom: "Dishwasher not draining properly"
+   - Category match: false
+   - Description match: false
+   - Causes match: false
+   - Keywords match: false
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [dishwasher, not, draining, properly]
+   - Final match: false
+🔍 Checking symptom: "Refrigerator not cooling properly"
+   - Category match: true
+   - Description match: false
+   - Causes match: false
+   - Keywords match: false
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [refrigerator, not, cooling, properly]
+   - Final match: false
+✅ TroubleshootingTool found guidance for "The ice maker on my Whirlpool fridge is not working. How can I fix it?" with 5 diagnostic steps
+🔧 TroubleshootingTool returning data: {
+  "troubleshooting": {
+    "symptom": {
+      "id": "ice-maker-not-working",
+      "description": "Ice maker not producing ice",
+      "category": "refrigerator",
+      "commonCauses": [
+        "Water supply issue",
+        "Faulty ice maker assembly",
+        "Clogged water inlet valve",
+        "Temperature too warm",
+        "Electrical connection problem"
+      ],
+      "diagnosticSteps": [
+        {
+          "step": 1,
+          "description": "Check if the ice maker is turned on and the wire arm is down",
+          "expectedResult": "Ice maker should be in ON position",
+          "nextStepIfTrue": 2,
+          "recommendedAction": "Turn on ice maker and lower wire arm"
+        },
+        {
+          "step": 2,
+          "description": "Verify water supply - check if water dispenser works",
+          "expectedResult": "Water should flow from dispenser",
+          "nextStepIfTrue": 3,
+          "nextStepIfFalse": 4
+        },
+        {
+          "step": 3,
+          "description": "Listen for ice maker cycling sounds (motor running, water filling)",
+          "expectedResult": "Should hear cycling sounds every few hours",
+          "nextStepIfFalse": 5,
+          "recommendedAction": "If no sounds, ice maker assembly may need replacement"
+        },
+        {
+          "step": 4,
+          "description": "Check water filter and water line connections",
+          "expectedResult": "Filter should be properly installed, lines connected",
+          "nextStepIfTrue": 2,
+          "recommendedAction": "Replace filter or check water line connections"
+        },
+        {
+          "step": 5,
+          "description": "Check freezer temperature (should be 0-5°F)",
+          "expectedResult": "Temperature should be within range",
+          "recommendedAction": "Adjust temperature or check for cooling system issues"
+        }
+      ],
+      "recommendedParts": [
+        "W10873791",
+        "W10190965",
+        "PS11752778"
+      ]
+    },
+    "diagnosticSteps": [
+      {
+        "step": 1,
+        "description": "Check if the ice maker is turned on and the wire arm is down",
+        "expectedResult": "Ice maker should be in ON position",
+        "nextStepIfTrue": 2,
+        "recommendedAction": "Turn on ice maker and lower wire arm"
+      },
+      {
+        "step": 2,
+        "description": "Verify water supply - check if water dispenser works",
+        "expectedResult": "Water should flow from dispenser",
+        "nextStepIfTrue": 3,
+        "nextStepIfFalse": 4
+      },
+      {
+        "step": 3,
+        "description": "Listen for ice maker cycling sounds (motor running, water filling)",
+        "expectedResult": "Should hear cycling sounds every few hours",
+        "nextStepIfFalse": 5,
+        "recommendedAction": "If no sounds, ice maker assembly may need replacement"
+      },
+      {
+        "step": 4,
+        "description": "Check water filter and water line connections",
+        "expectedResult": "Filter should be properly installed, lines connected",
+        "nextStepIfTrue": 2,
+        "recommendedAction": "Replace filter or check water line connections"
+      },
+      {
+        "step": 5,
+        "description": "Check freezer temperature (should be 0-5°F)",
+        "expectedResult": "Temperature should be within range",
+        "recommendedAction": "Adjust temperature or check for cooling system issues"
+      }
+    ],
+    "recommendedParts": [
+      {
+        "id": "3",
+        "partNumber": "W10873791",
+        "name": "Ice Maker Assembly",
+        "description": "Complete ice maker assembly for Whirlpool refrigerators. Includes ice maker module, wire harness, and mounting hardware.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF767SDHZ",
+          "WRF555SDFZ",
+          "WRS325SDHZ"
+        ],
+        "price": 234.99,
+        "availability": "in-stock",
+        "installationDifficulty": "medium",
+        "estimatedInstallTime": 45,
+        "requiredTools": [
+          "Phillips head screwdriver",
+          "Flathead screwdriver",
+          "1/4 inch nut driver"
+        ],
+        "safetyWarnings": [
+          "Unplug refrigerator before starting repair",
+          "Turn off water supply to ice maker",
+          "Allow ice maker to reach room temperature before handling"
+        ]
+      },
+      {
+        "id": "4",
+        "partNumber": "W10190965",
+        "name": "Ice Maker Water Inlet Valve",
+        "description": "Water inlet valve that controls water flow to the ice maker. Common replacement part when ice maker stops producing ice.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF767SDHZ",
+          "WRF555SDFZ",
+          "WRS325SDHZ"
+        ],
+        "price": 67.99,
+        "availability": "in-stock",
+        "installationDifficulty": "medium",
+        "estimatedInstallTime": 30,
+        "requiredTools": [
+          "Adjustable wrench",
+          "Phillips head screwdriver",
+          "Towels"
+        ],
+        "safetyWarnings": [
+          "Turn off water supply before removal",
+          "Unplug refrigerator",
+          "Have towels ready for water spillage"
+        ]
+      },
+      {
+        "id": "1",
+        "partNumber": "PS11752778",
+        "name": "Refrigerator Water Filter",
+        "description": "Genuine replacement water filter for various refrigerator models. Reduces chlorine, sediment, and other impurities for clean, fresh-tasting water and ice.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF757SDEM",
+          "WRF540CWHZ",
+          "WRF535SWHZ"
+        ],
+        "price": 45.99,
+        "availability": "in-stock",
+        "imageUrl": "https://images.partselect.com/PS11752778_01_a.jpg",
+        "installationDifficulty": "easy",
+        "estimatedInstallTime": 10,
+        "requiredTools": [
+          "None - tool-free installation"
+        ],
+        "safetyWarnings": [
+          "Turn off water supply before installation",
+          "Flush filter for 3-5 minutes before use",
+          "Replace every 6 months for optimal performance"
+        ],
+        "installationSteps": [
+          {
+            "step": 1,
+            "title": "Locate the water filter",
+            "description": "Open the refrigerator door and locate the water filter compartment, typically in the upper right corner of the fresh food section."
+          },
+          {
+            "step": 2,
+            "title": "Remove the old filter",
+            "description": "Turn the old filter counterclockwise (left) until it releases. Pull the filter straight out.",
+            "warning": "Some water may spill during removal - have a towel ready."
+          },
+          {
+            "step": 3,
+            "title": "Prepare the new filter",
+            "description": "Remove all packaging from the new filter. Remove any protective caps or seals."
+          },
+          {
+            "step": 4,
+            "title": "Install the new filter",
+            "description": "Insert the new filter and turn clockwise (right) until it locks in place. You should feel it click into position."
+          },
+          {
+            "step": 5,
+            "title": "Reset the filter indicator",
+            "description": "Press and hold the water filter reset button for 3 seconds until the indicator light turns green or stops blinking."
+          },
+          {
+            "step": 6,
+            "title": "Flush the system",
+            "description": "Run water through the dispenser for 3-5 minutes to flush out any air and activate the filter.",
+            "warning": "Initial water may appear cloudy - this is normal and will clear after flushing."
+          }
+        ]
+      }
+    ],
+    "shouldContactProfessional": false
+  },
+  "summary": "## Troubleshooting: Ice maker not producing ice\n\n**Your Issue**: The ice maker on my Whirlpool fridge is not working. How can I fix it?\n**Appliance Type**: Refrigerator\n\n**Common Causes**:\n1. Water supply issue\n2. Faulty ice maker assembly\n3. Clogged water inlet valve\n4. Temperature too warm\n5. Electrical connection problem\n\n**Potentially Needed Parts**: 3 parts identified (Total value: ~$348.97)\n",
+  "diagnosticGuide": "# Diagnostic Guide: Ice maker not producing ice\n\n## Diagnostic Steps\n\n### 1. Check if the ice maker is turned on and the wire arm is down\n**What to look for**: Ice maker should be in ON position\n**Recommended action**: Turn on ice maker and lower wire arm\n**Next step**: If this checks out, proceed to step 2\n\n### 2. Verify water supply - check if water dispenser works\n**What to look for**: Water should flow from dispenser\n**Next step**: Go to step 3 if yes, step 4 if no\n\n### 3. Listen for ice maker cycling sounds (motor running, water filling)\n**What to look for**: Should hear cycling sounds every few hours\n**Recommended action**: If no sounds, ice maker assembly may need replacement\n**Next step**: If this doesn't resolve the issue, go to step 5\n\n### 4. Check water filter and water line connections\n**What to look for**: Filter should be properly installed, lines connected\n**Recommended action**: Replace filter or check water line connections\n**Next step**: If this checks out, proceed to step 2\n\n### 5. Check freezer temperature (should be 0-5°F)\n**What to look for**: Temperature should be within range\n**Recommended action**: Adjust temperature or check for cooling system issues\n\n## General Recommendations\n- Always disconnect power before performing any inspections\n- Take photos of wire connections before disconnecting\n- Have your model number ready when ordering parts\n- If multiple parts are suspect, replace the most likely cause first\n- Test the appliance after each repair step\n\n",
+  "recommendedParts": [
+    {
+      "id": "3",
+      "partNumber": "W10873791",
+      "name": "Ice Maker Assembly",
+      "description": "Complete ice maker assembly for Whirlpool refrigerators. Includes ice maker module, wire harness, and mounting hardware.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF767SDHZ",
+        "WRF555SDFZ",
+        "WRS325SDHZ"
+      ],
+      "price": 234.99,
+      "availability": "in-stock",
+      "installationDifficulty": "medium",
+      "estimatedInstallTime": 45,
+      "requiredTools": [
+        "Phillips head screwdriver",
+        "Flathead screwdriver",
+        "1/4 inch nut driver"
+      ],
+      "safetyWarnings": [
+        "Unplug refrigerator before starting repair",
+        "Turn off water supply to ice maker",
+        "Allow ice maker to reach room temperature before handling"
+      ]
+    },
+    {
+      "id": "4",
+      "partNumber": "W10190965",
+      "name": "Ice Maker Water Inlet Valve",
+      "description": "Water inlet valve that controls water flow to the ice maker. Common replacement part when ice maker stops producing ice.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF767SDHZ",
+        "WRF555SDFZ",
+        "WRS325SDHZ"
+      ],
+      "price": 67.99,
+      "availability": "in-stock",
+      "installationDifficulty": "medium",
+      "estimatedInstallTime": 30,
+      "requiredTools": [
+        "Adjustable wrench",
+        "Phillips head screwdriver",
+        "Towels"
+      ],
+      "safetyWarnings": [
+        "Turn off water supply before removal",
+        "Unplug refrigerator",
+        "Have towels ready for water spillage"
+      ]
+    },
+    {
+      "id": "1",
+      "partNumber": "PS11752778",
+      "name": "Refrigerator Water Filter",
+      "description": "Genuine replacement water filter for various refrigerator models. Reduces chlorine, sediment, and other impurities for clean, fresh-tasting water and ice.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF757SDEM",
+        "WRF540CWHZ",
+        "WRF535SWHZ"
+      ],
+      "price": 45.99,
+      "availability": "in-stock",
+      "imageUrl": "https://images.partselect.com/PS11752778_01_a.jpg",
+      "installationDifficulty": "easy",
+      "estimatedInstallTime": 10,
+      "requiredTools": [
+        "None - tool-free installation"
+      ],
+      "safetyWarnings": [
+        "Turn off water supply before installation",
+        "Flush filter for 3-5 minutes before use",
+        "Replace every 6 months for optimal performance"
+      ],
+      "installationSteps": [
+        {
+          "step": 1,
+          "title": "Locate the water filter",
+          "description": "Open the refrigerator door and locate the water filter compartment, typically in the upper right corner of the fresh food section."
+        },
+        {
+          "step": 2,
+          "title": "Remove the old filter",
+          "description": "Turn the old filter counterclockwise (left) until it releases. Pull the filter straight out.",
+          "warning": "Some water may spill during removal - have a towel ready."
+        },
+        {
+          "step": 3,
+          "title": "Prepare the new filter",
+          "description": "Remove all packaging from the new filter. Remove any protective caps or seals."
+        },
+        {
+          "step": 4,
+          "title": "Install the new filter",
+          "description": "Insert the new filter and turn clockwise (right) until it locks in place. You should feel it click into position."
+        },
+        {
+          "step": 5,
+          "title": "Reset the filter indicator",
+          "description": "Press and hold the water filter reset button for 3 seconds until the indicator light turns green or stops blinking."
+        },
+        {
+          "step": 6,
+          "title": "Flush the system",
+          "description": "Run water through the dispenser for 3-5 minutes to flush out any air and activate the filter.",
+          "warning": "Initial water may appear cloudy - this is normal and will clear after flushing."
+        }
+      ]
+    }
+  ]
+}
 👁️ Observation 4: Tool TroubleshootingGuide executed successfully
 💭 Thought 5: Generating final response for troubleshooting query with 1 tool results and 0 products.
 ✅ ReAct processing completed in 1 iterations
 ✅ Chat request processed successfully - 2 tools used
-📥 2025-09-13T19:29:22.083Z GET /socket.io/ - ::1
-📥 2025-09-13T19:29:28.237Z GET /socket.io/ - ::1
-📥 2025-09-13T19:29:38.308Z GET /socket.io/ - ::1
-📥 2025-09-13T19:29:51.997Z GET /socket.io/ - ::1
-📥 2025-09-13T19:30:03.991Z GET /socket.io/ - ::1
-📥 2025-09-13T19:30:16.987Z GET /socket.io/ - ::1
-📥 2025-09-13T19:30:22.991Z GET /socket.io/ - ::1
-📥 2025-09-13T19:30:36.990Z GET /socket.io/ - ::1
-📥 2025-09-13T19:30:42.991Z GET /socket.io/ - ::1
-📥 2025-09-13T19:30:58.990Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:09.257Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:17.066Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:23.095Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:37.943Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:43.176Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:49.490Z GET /socket.io/ - ::1
-📥 2025-09-13T19:31:54.977Z GET /socket.io/ - ::1
-📥 2025-09-13T19:32:03.995Z GET /socket.io/ - ::1
-📥 2025-09-13T19:32:10.830Z GET /socket.io/ - ::1
-📥 2025-09-13T19:32:15.979Z GET /socket.io/ - ::1
-📥 2025-09-13T19:32:22.281Z GET /socket.io/ - ::1
+📥 2025-09-13T23:18:50.347Z POST /api/chat - ::1
+Request body: {
+  message: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?...',
+  sessionId: 'final_test_again'
+}
+🤖 Processing chat request...
+🤖 Starting ReAct processing for: "The ice maker on my Whirlpool fridge is not working. How can I fix it?"
+💭 Thought 1: User query: "The ice maker on my Whirlpool fridge is not working. How can I fix it?". I need to analyze this request and determine the appropriate tools to use.
+💭 Thought 2: Analyzing user message: "The ice maker on my Whirlpool fridge is not working. How can I fix it?". Detected intent: troubleshooting
+🔧 Action 3: Using TroubleshootingGuide with parameters: {
+  symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
+  category: 'refrigerator'
+}
+🔨 Executing TroubleshootingGuide...
+🔍 TroubleshootingTool executing with parameters: {
+  symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
+  category: 'refrigerator'
+}
+🔍 SearchService.searchTroubleshooting called with symptom: "The ice maker on my Whirlpool fridge is not working. How can I fix it?", category: "refrigerator"
+🔍 Available troubleshooting symptoms: 3
+📋 Available symptom: "Ice maker not producing ice" (category: refrigerator)
+📋 Available symptom: "Dishwasher not draining properly" (category: dishwasher)
+📋 Available symptom: "Refrigerator not cooling properly" (category: refrigerator)
+🔍 Checking symptom: "Ice maker not producing ice"
+   - Category match: true
+   - Description match: false
+   - Causes match: true
+   - Keywords match: true
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [ice, maker, not, producing, ice]
+   - Final match: true
+🔍 Checking symptom: "Dishwasher not draining properly"
+   - Category match: false
+   - Description match: false
+   - Causes match: false
+   - Keywords match: false
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [dishwasher, not, draining, properly]
+   - Final match: false
+🔍 Checking symptom: "Refrigerator not cooling properly"
+   - Category match: true
+   - Description match: false
+   - Causes match: false
+   - Keywords match: false
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [refrigerator, not, cooling, properly]
+   - Final match: false
+✅ TroubleshootingTool found guidance for "The ice maker on my Whirlpool fridge is not working. How can I fix it?" with 5 diagnostic steps
+🔧 TroubleshootingTool returning data: {
+  "troubleshooting": {
+    "symptom": {
+      "id": "ice-maker-not-working",
+      "description": "Ice maker not producing ice",
+      "category": "refrigerator",
+      "commonCauses": [
+        "Water supply issue",
+        "Faulty ice maker assembly",
+        "Clogged water inlet valve",
+        "Temperature too warm",
+        "Electrical connection problem"
+      ],
+      "diagnosticSteps": [
+        {
+          "step": 1,
+          "description": "Check if the ice maker is turned on and the wire arm is down",
+          "expectedResult": "Ice maker should be in ON position",
+          "nextStepIfTrue": 2,
+          "recommendedAction": "Turn on ice maker and lower wire arm"
+        },
+        {
+          "step": 2,
+          "description": "Verify water supply - check if water dispenser works",
+          "expectedResult": "Water should flow from dispenser",
+          "nextStepIfTrue": 3,
+          "nextStepIfFalse": 4
+        },
+        {
+          "step": 3,
+          "description": "Listen for ice maker cycling sounds (motor running, water filling)",
+          "expectedResult": "Should hear cycling sounds every few hours",
+          "nextStepIfFalse": 5,
+          "recommendedAction": "If no sounds, ice maker assembly may need replacement"
+        },
+        {
+          "step": 4,
+          "description": "Check water filter and water line connections",
+          "expectedResult": "Filter should be properly installed, lines connected",
+          "nextStepIfTrue": 2,
+          "recommendedAction": "Replace filter or check water line connections"
+        },
+        {
+          "step": 5,
+          "description": "Check freezer temperature (should be 0-5°F)",
+          "expectedResult": "Temperature should be within range",
+          "recommendedAction": "Adjust temperature or check for cooling system issues"
+        }
+      ],
+      "recommendedParts": [
+        "W10873791",
+        "W10190965",
+        "PS11752778"
+      ]
+    },
+    "diagnosticSteps": [
+      {
+        "step": 1,
+        "description": "Check if the ice maker is turned on and the wire arm is down",
+        "expectedResult": "Ice maker should be in ON position",
+        "nextStepIfTrue": 2,
+        "recommendedAction": "Turn on ice maker and lower wire arm"
+      },
+      {
+        "step": 2,
+        "description": "Verify water supply - check if water dispenser works",
+        "expectedResult": "Water should flow from dispenser",
+        "nextStepIfTrue": 3,
+        "nextStepIfFalse": 4
+      },
+      {
+        "step": 3,
+        "description": "Listen for ice maker cycling sounds (motor running, water filling)",
+        "expectedResult": "Should hear cycling sounds every few hours",
+        "nextStepIfFalse": 5,
+        "recommendedAction": "If no sounds, ice maker assembly may need replacement"
+      },
+      {
+        "step": 4,
+        "description": "Check water filter and water line connections",
+        "expectedResult": "Filter should be properly installed, lines connected",
+        "nextStepIfTrue": 2,
+        "recommendedAction": "Replace filter or check water line connections"
+      },
+      {
+        "step": 5,
+        "description": "Check freezer temperature (should be 0-5°F)",
+        "expectedResult": "Temperature should be within range",
+        "recommendedAction": "Adjust temperature or check for cooling system issues"
+      }
+    ],
+    "recommendedParts": [
+      {
+        "id": "3",
+        "partNumber": "W10873791",
+        "name": "Ice Maker Assembly",
+        "description": "Complete ice maker assembly for Whirlpool refrigerators. Includes ice maker module, wire harness, and mounting hardware.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF767SDHZ",
+          "WRF555SDFZ",
+          "WRS325SDHZ"
+        ],
+        "price": 234.99,
+        "availability": "in-stock",
+        "installationDifficulty": "medium",
+        "estimatedInstallTime": 45,
+        "requiredTools": [
+          "Phillips head screwdriver",
+          "Flathead screwdriver",
+          "1/4 inch nut driver"
+        ],
+        "safetyWarnings": [
+          "Unplug refrigerator before starting repair",
+          "Turn off water supply to ice maker",
+          "Allow ice maker to reach room temperature before handling"
+        ]
+      },
+      {
+        "id": "4",
+        "partNumber": "W10190965",
+        "name": "Ice Maker Water Inlet Valve",
+        "description": "Water inlet valve that controls water flow to the ice maker. Common replacement part when ice maker stops producing ice.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF767SDHZ",
+          "WRF555SDFZ",
+          "WRS325SDHZ"
+        ],
+        "price": 67.99,
+        "availability": "in-stock",
+        "installationDifficulty": "medium",
+        "estimatedInstallTime": 30,
+        "requiredTools": [
+          "Adjustable wrench",
+          "Phillips head screwdriver",
+          "Towels"
+        ],
+        "safetyWarnings": [
+          "Turn off water supply before removal",
+          "Unplug refrigerator",
+          "Have towels ready for water spillage"
+        ]
+      },
+      {
+        "id": "1",
+        "partNumber": "PS11752778",
+        "name": "Refrigerator Water Filter",
+        "description": "Genuine replacement water filter for various refrigerator models. Reduces chlorine, sediment, and other impurities for clean, fresh-tasting water and ice.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF757SDEM",
+          "WRF540CWHZ",
+          "WRF535SWHZ"
+        ],
+        "price": 45.99,
+        "availability": "in-stock",
+        "imageUrl": "https://images.partselect.com/PS11752778_01_a.jpg",
+        "installationDifficulty": "easy",
+        "estimatedInstallTime": 10,
+        "requiredTools": [
+          "None - tool-free installation"
+        ],
+        "safetyWarnings": [
+          "Turn off water supply before installation",
+          "Flush filter for 3-5 minutes before use",
+          "Replace every 6 months for optimal performance"
+        ],
+        "installationSteps": [
+          {
+            "step": 1,
+            "title": "Locate the water filter",
+            "description": "Open the refrigerator door and locate the water filter compartment, typically in the upper right corner of the fresh food section."
+          },
+          {
+            "step": 2,
+            "title": "Remove the old filter",
+            "description": "Turn the old filter counterclockwise (left) until it releases. Pull the filter straight out.",
+            "warning": "Some water may spill during removal - have a towel ready."
+          },
+          {
+            "step": 3,
+            "title": "Prepare the new filter",
+            "description": "Remove all packaging from the new filter. Remove any protective caps or seals."
+          },
+          {
+            "step": 4,
+            "title": "Install the new filter",
+            "description": "Insert the new filter and turn clockwise (right) until it locks in place. You should feel it click into position."
+          },
+          {
+            "step": 5,
+            "title": "Reset the filter indicator",
+            "description": "Press and hold the water filter reset button for 3 seconds until the indicator light turns green or stops blinking."
+          },
+          {
+            "step": 6,
+            "title": "Flush the system",
+            "description": "Run water through the dispenser for 3-5 minutes to flush out any air and activate the filter.",
+            "warning": "Initial water may appear cloudy - this is normal and will clear after flushing."
+          }
+        ]
+      }
+    ],
+    "shouldContactProfessional": false
+  },
+  "summary": "## Troubleshooting: Ice maker not producing ice\n\n**Your Issue**: The ice maker on my Whirlpool fridge is not working. How can I fix it?\n**Appliance Type**: Refrigerator\n\n**Common Causes**:\n1. Water supply issue\n2. Faulty ice maker assembly\n3. Clogged water inlet valve\n4. Temperature too warm\n5. Electrical connection problem\n\n**Potentially Needed Parts**: 3 parts identified (Total value: ~$348.97)\n",
+  "diagnosticGuide": "# Diagnostic Guide: Ice maker not producing ice\n\n## Diagnostic Steps\n\n### 1. Check if the ice maker is turned on and the wire arm is down\n**What to look for**: Ice maker should be in ON position\n**Recommended action**: Turn on ice maker and lower wire arm\n**Next step**: If this checks out, proceed to step 2\n\n### 2. Verify water supply - check if water dispenser works\n**What to look for**: Water should flow from dispenser\n**Next step**: Go to step 3 if yes, step 4 if no\n\n### 3. Listen for ice maker cycling sounds (motor running, water filling)\n**What to look for**: Should hear cycling sounds every few hours\n**Recommended action**: If no sounds, ice maker assembly may need replacement\n**Next step**: If this doesn't resolve the issue, go to step 5\n\n### 4. Check water filter and water line connections\n**What to look for**: Filter should be properly installed, lines connected\n**Recommended action**: Replace filter or check water line connections\n**Next step**: If this checks out, proceed to step 2\n\n### 5. Check freezer temperature (should be 0-5°F)\n**What to look for**: Temperature should be within range\n**Recommended action**: Adjust temperature or check for cooling system issues\n\n## General Recommendations\n- Always disconnect power before performing any inspections\n- Take photos of wire connections before disconnecting\n- Have your model number ready when ordering parts\n- If multiple parts are suspect, replace the most likely cause first\n- Test the appliance after each repair step\n\n",
+  "recommendedParts": [
+    {
+      "id": "3",
+      "partNumber": "W10873791",
+      "name": "Ice Maker Assembly",
+      "description": "Complete ice maker assembly for Whirlpool refrigerators. Includes ice maker module, wire harness, and mounting hardware.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF767SDHZ",
+        "WRF555SDFZ",
+        "WRS325SDHZ"
+      ],
+      "price": 234.99,
+      "availability": "in-stock",
+      "installationDifficulty": "medium",
+      "estimatedInstallTime": 45,
+      "requiredTools": [
+        "Phillips head screwdriver",
+        "Flathead screwdriver",
+        "1/4 inch nut driver"
+      ],
+      "safetyWarnings": [
+        "Unplug refrigerator before starting repair",
+        "Turn off water supply to ice maker",
+        "Allow ice maker to reach room temperature before handling"
+      ]
+    },
+    {
+      "id": "4",
+      "partNumber": "W10190965",
+      "name": "Ice Maker Water Inlet Valve",
+      "description": "Water inlet valve that controls water flow to the ice maker. Common replacement part when ice maker stops producing ice.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF767SDHZ",
+        "WRF555SDFZ",
+        "WRS325SDHZ"
+      ],
+      "price": 67.99,
+      "availability": "in-stock",
+      "installationDifficulty": "medium",
+      "estimatedInstallTime": 30,
+      "requiredTools": [
+        "Adjustable wrench",
+        "Phillips head screwdriver",
+        "Towels"
+      ],
+      "safetyWarnings": [
+        "Turn off water supply before removal",
+        "Unplug refrigerator",
+        "Have towels ready for water spillage"
+      ]
+    },
+    {
+      "id": "1",
+      "partNumber": "PS11752778",
+      "name": "Refrigerator Water Filter",
+      "description": "Genuine replacement water filter for various refrigerator models. Reduces chlorine, sediment, and other impurities for clean, fresh-tasting water and ice.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF757SDEM",
+        "WRF540CWHZ",
+        "WRF535SWHZ"
+      ],
+      "price": 45.99,
+      "availability": "in-stock",
+      "imageUrl": "https://images.partselect.com/PS11752778_01_a.jpg",
+      "installationDifficulty": "easy",
+      "estimatedInstallTime": 10,
+      "requiredTools": [
+        "None - tool-free installation"
+      ],
+      "safetyWarnings": [
+        "Turn off water supply before installation",
+        "Flush filter for 3-5 minutes before use",
+        "Replace every 6 months for optimal performance"
+      ],
+      "installationSteps": [
+        {
+          "step": 1,
+          "title": "Locate the water filter",
+          "description": "Open the refrigerator door and locate the water filter compartment, typically in the upper right corner of the fresh food section."
+        },
+        {
+          "step": 2,
+          "title": "Remove the old filter",
+          "description": "Turn the old filter counterclockwise (left) until it releases. Pull the filter straight out.",
+          "warning": "Some water may spill during removal - have a towel ready."
+        },
+        {
+          "step": 3,
+          "title": "Prepare the new filter",
+          "description": "Remove all packaging from the new filter. Remove any protective caps or seals."
+        },
+        {
+          "step": 4,
+          "title": "Install the new filter",
+          "description": "Insert the new filter and turn clockwise (right) until it locks in place. You should feel it click into position."
+        },
+        {
+          "step": 5,
+          "title": "Reset the filter indicator",
+          "description": "Press and hold the water filter reset button for 3 seconds until the indicator light turns green or stops blinking."
+        },
+        {
+          "step": 6,
+          "title": "Flush the system",
+          "description": "Run water through the dispenser for 3-5 minutes to flush out any air and activate the filter.",
+          "warning": "Initial water may appear cloudy - this is normal and will clear after flushing."
+        }
+      ]
+    }
+  ]
+}
+👁️ Observation 4: Tool TroubleshootingGuide executed successfully
+💭 Thought 5: Generating final response for troubleshooting query with 1 tool results and 0 products.
+✅ ReAct processing completed in 1 iterations
+✅ Chat request processed successfully - 2 tools used
+📥 2025-09-13T23:19:49.712Z POST /api/chat - ::1
+Request body: {
+  message: 'How to install water filter PS11752778?...',
+  sessionId: 'test1'
+}
+🤖 Processing chat request...
+🤖 Starting ReAct processing for: "How to install water filter PS11752778?"
+💭 Thought 1: User query: "How to install water filter PS11752778?". I need to analyze this request and determine the appropriate tools to use.
+💭 Thought 2: Analyzing user message: "How to install water filter PS11752778?". Detected intent: installation
+🔧 Action 3: Using InstallationGuide with parameters: { partNumber: 'PS11752778' }
+🔨 Executing InstallationGuide...
+🔧 InstallationTool executing with parameters: { partNumber: 'PS11752778' }
+✅ InstallationTool found instructions for PS11752778 (easy difficulty)
+👁️ Observation 4: Tool InstallationGuide executed successfully
+💭 Thought 5: Generating final response for installation query with 1 tool results and 0 products.
+✅ ReAct processing completed in 1 iterations
+✅ Chat request processed successfully - 2 tools used
+📥 2025-09-13T23:19:55.809Z POST /api/chat - ::1
+Request body: {
+  message: 'Is part W10873791 compatible with model WRF989SDAM?...',
+  sessionId: 'test2'
+}
+🤖 Processing chat request...
+🤖 Starting ReAct processing for: "Is part W10873791 compatible with model WRF989SDAM?"
+💭 Thought 1: User query: "Is part W10873791 compatible with model WRF989SDAM?". I need to analyze this request and determine the appropriate tools to use.
+💭 Thought 2: Analyzing user message: "Is part W10873791 compatible with model WRF989SDAM?". Detected intent: compatibility
+🔧 Action 3: Using CompatibilityCheck with parameters: { partNumber: 'W10873791', modelNumber: 'WRF989SDAM' }
+🔨 Executing CompatibilityCheck...
+🔍 CompatibilityTool executing with parameters: { partNumber: 'W10873791', modelNumber: 'WRF989SDAM' }
+✅ CompatibilityTool checked W10873791 with WRF989SDAM: Compatible
+👁️ Observation 4: Tool CompatibilityCheck executed successfully
+💭 Thought 5: Generating final response for compatibility query with 1 tool results and 0 products.
+✅ ReAct processing completed in 1 iterations
+✅ Chat request processed successfully - 2 tools used
+📥 2025-09-13T23:20:02.185Z POST /api/chat - ::1
+Request body: {
+  message: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?...',
+  sessionId: 'test3'
+}
+🤖 Processing chat request...
+🤖 Starting ReAct processing for: "The ice maker on my Whirlpool fridge is not working. How can I fix it?"
+💭 Thought 1: User query: "The ice maker on my Whirlpool fridge is not working. How can I fix it?". I need to analyze this request and determine the appropriate tools to use.
+💭 Thought 2: Analyzing user message: "The ice maker on my Whirlpool fridge is not working. How can I fix it?". Detected intent: troubleshooting
+🔧 Action 3: Using TroubleshootingGuide with parameters: {
+  symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
+  category: 'refrigerator'
+}
+🔨 Executing TroubleshootingGuide...
+🔍 TroubleshootingTool executing with parameters: {
+  symptom: 'The ice maker on my Whirlpool fridge is not working. How can I fix it?',
+  category: 'refrigerator'
+}
+🔍 SearchService.searchTroubleshooting called with symptom: "The ice maker on my Whirlpool fridge is not working. How can I fix it?", category: "refrigerator"
+🔍 Available troubleshooting symptoms: 3
+📋 Available symptom: "Ice maker not producing ice" (category: refrigerator)
+📋 Available symptom: "Dishwasher not draining properly" (category: dishwasher)
+📋 Available symptom: "Refrigerator not cooling properly" (category: refrigerator)
+🔍 Checking symptom: "Ice maker not producing ice"
+   - Category match: true
+   - Description match: false
+   - Causes match: true
+   - Keywords match: true
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [ice, maker, not, producing, ice]
+   - Final match: true
+🔍 Checking symptom: "Dishwasher not draining properly"
+   - Category match: false
+   - Description match: false
+   - Causes match: false
+   - Keywords match: false
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [dishwasher, not, draining, properly]
+   - Final match: false
+🔍 Checking symptom: "Refrigerator not cooling properly"
+   - Category match: true
+   - Description match: false
+   - Causes match: false
+   - Keywords match: false
+   - User keywords: [ice, maker, whirlpool, fridge, working., it?]
+   - Desc keywords: [refrigerator, not, cooling, properly]
+   - Final match: false
+✅ TroubleshootingTool found guidance for "The ice maker on my Whirlpool fridge is not working. How can I fix it?" with 5 diagnostic steps
+🔧 TroubleshootingTool returning data: {
+  "troubleshooting": {
+    "symptom": {
+      "id": "ice-maker-not-working",
+      "description": "Ice maker not producing ice",
+      "category": "refrigerator",
+      "commonCauses": [
+        "Water supply issue",
+        "Faulty ice maker assembly",
+        "Clogged water inlet valve",
+        "Temperature too warm",
+        "Electrical connection problem"
+      ],
+      "diagnosticSteps": [
+        {
+          "step": 1,
+          "description": "Check if the ice maker is turned on and the wire arm is down",
+          "expectedResult": "Ice maker should be in ON position",
+          "nextStepIfTrue": 2,
+          "recommendedAction": "Turn on ice maker and lower wire arm"
+        },
+        {
+          "step": 2,
+          "description": "Verify water supply - check if water dispenser works",
+          "expectedResult": "Water should flow from dispenser",
+          "nextStepIfTrue": 3,
+          "nextStepIfFalse": 4
+        },
+        {
+          "step": 3,
+          "description": "Listen for ice maker cycling sounds (motor running, water filling)",
+          "expectedResult": "Should hear cycling sounds every few hours",
+          "nextStepIfFalse": 5,
+          "recommendedAction": "If no sounds, ice maker assembly may need replacement"
+        },
+        {
+          "step": 4,
+          "description": "Check water filter and water line connections",
+          "expectedResult": "Filter should be properly installed, lines connected",
+          "nextStepIfTrue": 2,
+          "recommendedAction": "Replace filter or check water line connections"
+        },
+        {
+          "step": 5,
+          "description": "Check freezer temperature (should be 0-5°F)",
+          "expectedResult": "Temperature should be within range",
+          "recommendedAction": "Adjust temperature or check for cooling system issues"
+        }
+      ],
+      "recommendedParts": [
+        "W10873791",
+        "W10190965",
+        "PS11752778"
+      ]
+    },
+    "diagnosticSteps": [
+      {
+        "step": 1,
+        "description": "Check if the ice maker is turned on and the wire arm is down",
+        "expectedResult": "Ice maker should be in ON position",
+        "nextStepIfTrue": 2,
+        "recommendedAction": "Turn on ice maker and lower wire arm"
+      },
+      {
+        "step": 2,
+        "description": "Verify water supply - check if water dispenser works",
+        "expectedResult": "Water should flow from dispenser",
+        "nextStepIfTrue": 3,
+        "nextStepIfFalse": 4
+      },
+      {
+        "step": 3,
+        "description": "Listen for ice maker cycling sounds (motor running, water filling)",
+        "expectedResult": "Should hear cycling sounds every few hours",
+        "nextStepIfFalse": 5,
+        "recommendedAction": "If no sounds, ice maker assembly may need replacement"
+      },
+      {
+        "step": 4,
+        "description": "Check water filter and water line connections",
+        "expectedResult": "Filter should be properly installed, lines connected",
+        "nextStepIfTrue": 2,
+        "recommendedAction": "Replace filter or check water line connections"
+      },
+      {
+        "step": 5,
+        "description": "Check freezer temperature (should be 0-5°F)",
+        "expectedResult": "Temperature should be within range",
+        "recommendedAction": "Adjust temperature or check for cooling system issues"
+      }
+    ],
+    "recommendedParts": [
+      {
+        "id": "3",
+        "partNumber": "W10873791",
+        "name": "Ice Maker Assembly",
+        "description": "Complete ice maker assembly for Whirlpool refrigerators. Includes ice maker module, wire harness, and mounting hardware.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF767SDHZ",
+          "WRF555SDFZ",
+          "WRS325SDHZ"
+        ],
+        "price": 234.99,
+        "availability": "in-stock",
+        "installationDifficulty": "medium",
+        "estimatedInstallTime": 45,
+        "requiredTools": [
+          "Phillips head screwdriver",
+          "Flathead screwdriver",
+          "1/4 inch nut driver"
+        ],
+        "safetyWarnings": [
+          "Unplug refrigerator before starting repair",
+          "Turn off water supply to ice maker",
+          "Allow ice maker to reach room temperature before handling"
+        ]
+      },
+      {
+        "id": "4",
+        "partNumber": "W10190965",
+        "name": "Ice Maker Water Inlet Valve",
+        "description": "Water inlet valve that controls water flow to the ice maker. Common replacement part when ice maker stops producing ice.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF767SDHZ",
+          "WRF555SDFZ",
+          "WRS325SDHZ"
+        ],
+        "price": 67.99,
+        "availability": "in-stock",
+        "installationDifficulty": "medium",
+        "estimatedInstallTime": 30,
+        "requiredTools": [
+          "Adjustable wrench",
+          "Phillips head screwdriver",
+          "Towels"
+        ],
+        "safetyWarnings": [
+          "Turn off water supply before removal",
+          "Unplug refrigerator",
+          "Have towels ready for water spillage"
+        ]
+      },
+      {
+        "id": "1",
+        "partNumber": "PS11752778",
+        "name": "Refrigerator Water Filter",
+        "description": "Genuine replacement water filter for various refrigerator models. Reduces chlorine, sediment, and other impurities for clean, fresh-tasting water and ice.",
+        "category": "refrigerator",
+        "brand": "Whirlpool",
+        "compatibleModels": [
+          "WRF989SDAM",
+          "WRF757SDEM",
+          "WRF540CWHZ",
+          "WRF535SWHZ"
+        ],
+        "price": 45.99,
+        "availability": "in-stock",
+        "imageUrl": "https://images.partselect.com/PS11752778_01_a.jpg",
+        "installationDifficulty": "easy",
+        "estimatedInstallTime": 10,
+        "requiredTools": [
+          "None - tool-free installation"
+        ],
+        "safetyWarnings": [
+          "Turn off water supply before installation",
+          "Flush filter for 3-5 minutes before use",
+          "Replace every 6 months for optimal performance"
+        ],
+        "installationSteps": [
+          {
+            "step": 1,
+            "title": "Locate the water filter",
+            "description": "Open the refrigerator door and locate the water filter compartment, typically in the upper right corner of the fresh food section."
+          },
+          {
+            "step": 2,
+            "title": "Remove the old filter",
+            "description": "Turn the old filter counterclockwise (left) until it releases. Pull the filter straight out.",
+            "warning": "Some water may spill during removal - have a towel ready."
+          },
+          {
+            "step": 3,
+            "title": "Prepare the new filter",
+            "description": "Remove all packaging from the new filter. Remove any protective caps or seals."
+          },
+          {
+            "step": 4,
+            "title": "Install the new filter",
+            "description": "Insert the new filter and turn clockwise (right) until it locks in place. You should feel it click into position."
+          },
+          {
+            "step": 5,
+            "title": "Reset the filter indicator",
+            "description": "Press and hold the water filter reset button for 3 seconds until the indicator light turns green or stops blinking."
+          },
+          {
+            "step": 6,
+            "title": "Flush the system",
+            "description": "Run water through the dispenser for 3-5 minutes to flush out any air and activate the filter.",
+            "warning": "Initial water may appear cloudy - this is normal and will clear after flushing."
+          }
+        ]
+      }
+    ],
+    "shouldContactProfessional": false
+  },
+  "summary": "## Troubleshooting: Ice maker not producing ice\n\n**Your Issue**: The ice maker on my Whirlpool fridge is not working. How can I fix it?\n**Appliance Type**: Refrigerator\n\n**Common Causes**:\n1. Water supply issue\n2. Faulty ice maker assembly\n3. Clogged water inlet valve\n4. Temperature too warm\n5. Electrical connection problem\n\n**Potentially Needed Parts**: 3 parts identified (Total value: ~$348.97)\n",
+  "diagnosticGuide": "# Diagnostic Guide: Ice maker not producing ice\n\n## Diagnostic Steps\n\n### 1. Check if the ice maker is turned on and the wire arm is down\n**What to look for**: Ice maker should be in ON position\n**Recommended action**: Turn on ice maker and lower wire arm\n**Next step**: If this checks out, proceed to step 2\n\n### 2. Verify water supply - check if water dispenser works\n**What to look for**: Water should flow from dispenser\n**Next step**: Go to step 3 if yes, step 4 if no\n\n### 3. Listen for ice maker cycling sounds (motor running, water filling)\n**What to look for**: Should hear cycling sounds every few hours\n**Recommended action**: If no sounds, ice maker assembly may need replacement\n**Next step**: If this doesn't resolve the issue, go to step 5\n\n### 4. Check water filter and water line connections\n**What to look for**: Filter should be properly installed, lines connected\n**Recommended action**: Replace filter or check water line connections\n**Next step**: If this checks out, proceed to step 2\n\n### 5. Check freezer temperature (should be 0-5°F)\n**What to look for**: Temperature should be within range\n**Recommended action**: Adjust temperature or check for cooling system issues\n\n## General Recommendations\n- Always disconnect power before performing any inspections\n- Take photos of wire connections before disconnecting\n- Have your model number ready when ordering parts\n- If multiple parts are suspect, replace the most likely cause first\n- Test the appliance after each repair step\n\n",
+  "recommendedParts": [
+    {
+      "id": "3",
+      "partNumber": "W10873791",
+      "name": "Ice Maker Assembly",
+      "description": "Complete ice maker assembly for Whirlpool refrigerators. Includes ice maker module, wire harness, and mounting hardware.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF767SDHZ",
+        "WRF555SDFZ",
+        "WRS325SDHZ"
+      ],
+      "price": 234.99,
+      "availability": "in-stock",
+      "installationDifficulty": "medium",
+      "estimatedInstallTime": 45,
+      "requiredTools": [
+        "Phillips head screwdriver",
+        "Flathead screwdriver",
+        "1/4 inch nut driver"
+      ],
+      "safetyWarnings": [
+        "Unplug refrigerator before starting repair",
+        "Turn off water supply to ice maker",
+        "Allow ice maker to reach room temperature before handling"
+      ]
+    },
+    {
+      "id": "4",
+      "partNumber": "W10190965",
+      "name": "Ice Maker Water Inlet Valve",
+      "description": "Water inlet valve that controls water flow to the ice maker. Common replacement part when ice maker stops producing ice.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF767SDHZ",
+        "WRF555SDFZ",
+        "WRS325SDHZ"
+      ],
+      "price": 67.99,
+      "availability": "in-stock",
+      "installationDifficulty": "medium",
+      "estimatedInstallTime": 30,
+      "requiredTools": [
+        "Adjustable wrench",
+        "Phillips head screwdriver",
+        "Towels"
+      ],
+      "safetyWarnings": [
+        "Turn off water supply before removal",
+        "Unplug refrigerator",
+        "Have towels ready for water spillage"
+      ]
+    },
+    {
+      "id": "1",
+      "partNumber": "PS11752778",
+      "name": "Refrigerator Water Filter",
+      "description": "Genuine replacement water filter for various refrigerator models. Reduces chlorine, sediment, and other impurities for clean, fresh-tasting water and ice.",
+      "category": "refrigerator",
+      "brand": "Whirlpool",
+      "compatibleModels": [
+        "WRF989SDAM",
+        "WRF757SDEM",
+        "WRF540CWHZ",
+        "WRF535SWHZ"
+      ],
+      "price": 45.99,
+      "availability": "in-stock",
+      "imageUrl": "https://images.partselect.com/PS11752778_01_a.jpg",
+      "installationDifficulty": "easy",
+      "estimatedInstallTime": 10,
+      "requiredTools": [
+        "None - tool-free installation"
+      ],
+      "safetyWarnings": [
+        "Turn off water supply before installation",
+        "Flush filter for 3-5 minutes before use",
+        "Replace every 6 months for optimal performance"
+      ],
+      "installationSteps": [
+        {
+          "step": 1,
+          "title": "Locate the water filter",
+          "description": "Open the refrigerator door and locate the water filter compartment, typically in the upper right corner of the fresh food section."
+        },
+        {
+          "step": 2,
+          "title": "Remove the old filter",
+          "description": "Turn the old filter counterclockwise (left) until it releases. Pull the filter straight out.",
+          "warning": "Some water may spill during removal - have a towel ready."
+        },
+        {
+          "step": 3,
+          "title": "Prepare the new filter",
+          "description": "Remove all packaging from the new filter. Remove any protective caps or seals."
+        },
+        {
+          "step": 4,
+          "title": "Install the new filter",
+          "description": "Insert the new filter and turn clockwise (right) until it locks in place. You should feel it click into position."
+        },
+        {
+          "step": 5,
+          "title": "Reset the filter indicator",
+          "description": "Press and hold the water filter reset button for 3 seconds until the indicator light turns green or stops blinking."
+        },
+        {
+          "step": 6,
+          "title": "Flush the system",
+          "description": "Run water through the dispenser for 3-5 minutes to flush out any air and activate the filter.",
+          "warning": "Initial water may appear cloudy - this is normal and will clear after flushing."
+        }
+      ]
+    }
+  ]
+}
+👁️ Observation 4: Tool TroubleshootingGuide executed successfully
+💭 Thought 5: Generating final response for troubleshooting query with 1 tool results and 0 products.
+✅ ReAct processing completed in 1 iterations
+✅ Chat request processed successfully - 2 tools used
+📥 2025-09-13T23:31:46.753Z POST /api/chat - ::1
+Request body: { message: 'How to install PS11752778?...', sessionId: 'test' }
+🤖 Processing chat request...
+🤖 Starting ReAct processing for: "How to install PS11752778?"
+💭 Thought 1: User query: "How to install PS11752778?". I need to analyze this request and determine the appropriate tools to use.
+💭 Thought 2: Analyzing user message: "How to install PS11752778?". Detected intent: installation
+🔧 Action 3: Using InstallationGuide with parameters: { partNumber: 'PS11752778' }
+🔨 Executing InstallationGuide...
+🔧 InstallationTool executing with parameters: { partNumber: 'PS11752778' }
+✅ InstallationTool found instructions for PS11752778 (easy difficulty)
+👁️ Observation 4: Tool InstallationGuide executed successfully
+💭 Thought 5: Generating final response for installation query with 1 tool results and 0 products.
+✅ ReAct processing completed in 1 iterations
+✅ Chat request processed successfully - 2 tools used

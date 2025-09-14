@@ -1,106 +1,86 @@
-import { Product, ProductSearchParams, SearchResult, CompatibilityCheck } from '../types';
+import { Product, ProductSearchParams, SearchResult, CompatibilityCheck, TroubleshootingResult } from '../types';
 import { sampleProducts, troubleshootingSymptoms } from '../data/sampleProducts';
 
+/**
+ * A service for searching and retrieving product-related information from a static dataset.
+ * This service encapsulates all data access logic for products, compatibility, and troubleshooting.
+ */
 export class SearchService {
   private products: Product[];
-  
+
   constructor() {
     this.products = sampleProducts;
-    console.log(`✅ SearchService initialized with ${this.products.length} products`);
   }
 
   /**
-   * Search for products based on various criteria
+   * Searches for products based on a variety of criteria.
+   * Prioritizes exact part number matches, then uses a scoring system for relevance.
+   * @param params The search parameters.
+   * @returns A promise that resolves to a SearchResult object.
    */
   public async searchProducts(params: ProductSearchParams): Promise<SearchResult> {
+    const { query, partNumber, brand, category, priceRange, availability, offset = 0, limit = 10 } = params;
     let results = [...this.products];
     const searchTerms: string[] = [];
-    
-    // Exact part number matching (highest priority)
-    if (params.partNumber) {
-      const exactMatch = results.filter(p => 
-        p.partNumber.toLowerCase() === params.partNumber!.toLowerCase()
-      );
-      if (exactMatch.length > 0) {
-        searchTerms.push(`part:${params.partNumber}`);
+
+    // Prioritize exact part number match and return immediately if found
+    if (partNumber) {
+      searchTerms.push(`part:${partNumber}`);
+      const exactMatch = results.find(p => this.normalizeString(p.partNumber) === this.normalizeString(partNumber));
+      if (exactMatch) {
         return {
-          products: exactMatch.slice(0, params.limit || 10),
-          totalCount: exactMatch.length,
-          searchTerms
+          products: [exactMatch],
+          totalCount: 1,
+          searchTerms,
+          suggestions: []
         };
       }
-      
-      // Partial part number matching
-      results = results.filter(p => 
-        p.partNumber.toLowerCase().includes(params.partNumber!.toLowerCase())
-      );
-      searchTerms.push(`part:${params.partNumber}`);
     }
 
-    // Category filtering
-    if (params.category) {
-      results = results.filter(p => p.category === params.category);
-      searchTerms.push(`category:${params.category}`);
+    // Apply filters based on other parameters
+    if (category) {
+      results = results.filter(p => p.category === category);
+      searchTerms.push(`category:${category}`);
     }
 
-    // Brand filtering
-    if (params.brand) {
-      results = results.filter(p => 
-        p.brand.toLowerCase().includes(params.brand!.toLowerCase())
-      );
-      searchTerms.push(`brand:${params.brand}`);
+    if (brand) {
+      results = results.filter(p => this.normalizeString(p.brand).includes(this.normalizeString(brand)));
+      searchTerms.push(`brand:${brand}`);
     }
 
-    // Price range filtering
-    if (params.priceRange) {
-      results = results.filter(p => 
-        p.price >= params.priceRange!.min && p.price <= params.priceRange!.max
-      );
-      searchTerms.push(`price:${params.priceRange.min}-${params.priceRange.max}`);
+    if (priceRange) {
+      results = results.filter(p => p.price >= priceRange.min && p.price <= priceRange.max);
+      searchTerms.push(`price:${priceRange.min}-${priceRange.max}`);
     }
 
-    // Availability filtering
-    if (params.availability) {
-      results = results.filter(p => p.availability === params.availability);
-      searchTerms.push(`availability:${params.availability}`);
+    if (availability) {
+      results = results.filter(p => p.availability === availability);
+      searchTerms.push(`availability:${availability}`);
     }
 
-    // Text-based search across name and description
-    if (params.query) {
-      const queryTerms = params.query.toLowerCase().split(' ');
-      results = results.filter(p => {
-        const searchText = `${p.name} ${p.description}`.toLowerCase();
-        return queryTerms.some(term => searchText.includes(term));
-      });
-      searchTerms.push(`query:${params.query}`);
-    }
+    // Use relevance scoring for the remaining results
+    const scoredResults = this.scoreAndSortResults(results, params);
+    const paginatedResults = scoredResults.slice(offset, offset + limit);
 
-    // Relevance scoring and sorting
-    results = this.scoreAndSortResults(results, params);
-
-    // Apply pagination
-    const offset = params.offset || 0;
-    const limit = params.limit || 10;
-    const paginatedResults = results.slice(offset, offset + limit);
-
-    // Generate suggestions for no results
-    const suggestions = results.length === 0 ? this.generateSuggestions(params) : undefined;
+    const suggestions = scoredResults.length === 0 ? this.generateSuggestions(params) : [];
 
     return {
       products: paginatedResults,
-      totalCount: results.length,
+      totalCount: scoredResults.length,
       searchTerms,
       suggestions
     };
   }
 
   /**
-   * Check compatibility between a part and model
+   * Checks the compatibility between a part and a model number.
+   * @param partNumber The part number to check.
+   * @param modelNumber The model number to check against.
+   * @returns A promise that resolves to a CompatibilityCheck object.
    */
   public async checkCompatibility(partNumber: string, modelNumber: string): Promise<CompatibilityCheck> {
-    const part = this.products.find(p => 
-      p.partNumber.toLowerCase() === partNumber.toLowerCase()
-    );
+    const part = this.products.find(p => this.normalizeString(p.partNumber) === this.normalizeString(partNumber));
+    const normalizedModelNumber = this.normalizeModel(modelNumber);
 
     if (!part) {
       return {
@@ -108,146 +88,91 @@ export class SearchService {
         modelNumber,
         isCompatible: false,
         confidence: 0,
-        reason: 'Part number not found in our database',
+        reason: 'Part number not found in our database.',
         alternativeParts: []
       };
     }
 
-    // Check if model is in compatible models list
-    const isDirectMatch = part.compatibleModels.some(model => 
-      model.toLowerCase() === modelNumber.toLowerCase()
-    );
+    const isCompatible = part.compatibleModels.some(model => this.normalizeModel(model) === normalizedModelNumber);
 
-    if (isDirectMatch) {
+    if (isCompatible) {
       return {
         partNumber,
         modelNumber,
         isCompatible: true,
         confidence: 1.0,
-        reason: `Part ${partNumber} is confirmed compatible with model ${modelNumber}`
+        reason: `Part ${partNumber} is confirmed compatible with model ${modelNumber}.`
       };
     }
 
-    // Check for partial model matches (for variations like WDT780SAEM1 vs WDT780SAEM)
-    const partialMatch = part.compatibleModels.some(model => {
-      const modelBase = model.replace(/[0-9]$/, ''); // Remove trailing number
-      const inputBase = modelNumber.replace(/[0-9]$/, '');
-      return modelBase.toLowerCase().includes(inputBase.toLowerCase()) ||
-             inputBase.toLowerCase().includes(modelBase.toLowerCase());
-    });
-
-    if (partialMatch) {
-      return {
-        partNumber,
-        modelNumber,
-        isCompatible: true,
-        confidence: 0.8,
-        reason: `Part ${partNumber} appears compatible with model ${modelNumber} based on model family matching`
-      };
-    }
-
-    // Find alternative parts for this model
-    const alternativeParts = this.products.filter(p => 
-      p.compatibleModels.some(model => 
-        model.toLowerCase().includes(modelNumber.toLowerCase()) ||
-        modelNumber.toLowerCase().includes(model.toLowerCase())
-      ) && p.category === part.category
-    );
+    const alternativeParts = this.products
+      .filter(p => p.category === part.category && p.compatibleModels.some(model => this.normalizeModel(model) === normalizedModelNumber))
+      .slice(0, 3);
 
     return {
       partNumber,
       modelNumber,
       isCompatible: false,
       confidence: 0,
-      reason: `Part ${partNumber} is not compatible with model ${modelNumber}`,
-      alternativeParts: alternativeParts.slice(0, 3) // Limit to top 3 alternatives
+      reason: `Part ${partNumber} is not compatible with model ${modelNumber}.`,
+      alternativeParts
     };
   }
 
   /**
-   * Find parts by compatible model number
-   */
-  public async findPartsByModel(modelNumber: string, category?: 'refrigerator' | 'dishwasher'): Promise<Product[]> {
-    let results = this.products.filter(p => 
-      p.compatibleModels.some(model => 
-        model.toLowerCase().includes(modelNumber.toLowerCase()) ||
-        modelNumber.toLowerCase().includes(model.toLowerCase())
-      )
-    );
-
-    if (category) {
-      results = results.filter(p => p.category === category);
-    }
-
-    return results.sort((a, b) => {
-      // Prioritize exact model matches
-      const aExact = a.compatibleModels.some(m => m.toLowerCase() === modelNumber.toLowerCase());
-      const bExact = b.compatibleModels.some(m => m.toLowerCase() === modelNumber.toLowerCase());
-      
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
-      
-      // Then by price (ascending)
-      return a.price - b.price;
-    });
-  }
-
-  /**
-   * Get product by part number
+   * Retrieves a product by its part number.
+   * @param partNumber The part number to look up.
+   * @returns A promise that resolves to the Product object or null if not found.
    */
   public async getProductByPartNumber(partNumber: string): Promise<Product | null> {
-    return this.products.find(p => 
-      p.partNumber.toLowerCase() === partNumber.toLowerCase()
-    ) || null;
+    return this.products.find(p => this.normalizeString(p.partNumber) === this.normalizeString(partNumber)) || null;
   }
 
   /**
-   * Search for troubleshooting information
+   * Searches for troubleshooting information based on a symptom and category.
+   * @param symptom The user-provided symptom.
+   * @param category The appliance category.
+   * @returns A promise that resolves to an array of TroubleshootingResult objects.
    */
-  public async searchTroubleshooting(symptom: string, category?: 'refrigerator' | 'dishwasher') {
-    const symptoms = troubleshootingSymptoms.filter(s => {
-      const matchesCategory = !category || s.category === category;
-      const matchesDescription = s.description.toLowerCase().includes(symptom.toLowerCase()) ||
-                                symptom.toLowerCase().includes(s.description.toLowerCase());
-      const matchesCauses = s.commonCauses.some(cause => 
-        cause.toLowerCase().includes(symptom.toLowerCase()) ||
-        symptom.toLowerCase().includes(cause.toLowerCase())
-      );
-      
+  public async searchTroubleshooting(symptom: string, category?: 'refrigerator' | 'dishwasher'): Promise<TroubleshootingResult[]> {
+    const normalizedSymptom = this.normalizeString(symptom);
+
+    const matchingSymptoms = troubleshootingSymptoms.filter(ts => {
+      const matchesCategory = !category || ts.category === category;
+      const matchesDescription = this.normalizeString(ts.description).includes(normalizedSymptom);
+      const matchesCauses = ts.commonCauses.some(cause => this.normalizeString(cause).includes(normalizedSymptom));
       return matchesCategory && (matchesDescription || matchesCauses);
     });
 
-    // For each symptom, get the recommended parts
-    const results = await Promise.all(symptoms.map(async symptom => {
-      const recommendedParts = await Promise.all(
-        symptom.recommendedParts?.map(partNumber => 
-          this.getProductByPartNumber(partNumber)
-        ).filter(Boolean) || []
-      );
+    const results = await Promise.all(
+      matchingSymptoms.map(async ts => {
+        // Corrected line to handle `undefined`
+        const recommendedParts = await Promise.all(
+          (ts.recommendedParts || []).map(partNumber => this.getProductByPartNumber(partNumber))
+        );
 
-      return {
-        symptom,
-        suggestedSteps: symptom.diagnosticSteps,
-        recommendedParts: recommendedParts.filter(p => p !== null) as Product[],
-        shouldContactProfessional: symptom.diagnosticSteps.length > 5 || 
-                                   symptom.description.toLowerCase().includes('electrical'),
-        reason: symptom.diagnosticSteps.length > 5 ? 
-               'Complex repair requiring multiple diagnostic steps' : 
-               symptom.description.toLowerCase().includes('electrical') ?
-               'Electrical repairs should be performed by qualified technicians' : undefined
-      };
-    }));
+        return {
+          symptom: ts,
+          suggestedSteps: ts.diagnosticSteps,
+          recommendedParts: recommendedParts.filter((p): p is Product => p !== null),
+          shouldContactProfessional: this.shouldContactProfessional(ts),
+          reason: this.getProfessionalContactReason(ts)
+        };
+      })
+    );
 
     return results;
   }
 
   /**
-   * Get installation instructions for a part
+   * Retrieves installation instructions for a specific part.
+   * @param partNumber The part number.
+   * @returns A promise that resolves to the installation instructions object or null if not found.
    */
   public async getInstallationInstructions(partNumber: string) {
     const product = await this.getProductByPartNumber(partNumber);
-    
-    if (!product) {
+
+    if (!product || !product.installationSteps) {
       return null;
     }
 
@@ -258,136 +183,130 @@ export class SearchService {
       estimatedTime: product.estimatedInstallTime,
       requiredTools: product.requiredTools,
       safetyWarnings: product.safetyWarnings,
-      steps: product.installationSteps || [],
+      steps: product.installationSteps,
       additionalNotes: [
-        'Always read all instructions before beginning installation',
-        'Ensure you have all required tools before starting',
-        'If you encounter any issues, consult a professional technician',
-        'Keep all safety warnings in mind throughout the installation process'
+        'Always read all instructions before beginning installation.',
+        'Ensure you have all required tools before starting.',
+        'If you encounter any issues, consult a professional technician.',
+        'Keep all safety warnings in mind throughout the installation process.'
       ]
     };
   }
 
   /**
-   * Score and sort search results by relevance
+   * Scores and sorts products based on relevance to the search parameters.
+   * @private
    */
   private scoreAndSortResults(products: Product[], params: ProductSearchParams): Product[] {
-    return products.map(product => ({
-      product,
-      score: this.calculateRelevanceScore(product, params)
-    }))
-    .sort((a, b) => b.score - a.score)
-    .map(item => item.product);
+    const { query, brand, partNumber } = params;
+
+    return products
+      .map(product => ({
+        product,
+        score: this.calculateRelevanceScore(product, query, brand, partNumber)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.product);
   }
 
   /**
-   * Calculate relevance score for search results
+   * Calculates a relevance score for a product based on search terms.
+   * @private
    */
-  private calculateRelevanceScore(product: Product, params: ProductSearchParams): number {
+  private calculateRelevanceScore(product: Product, query?: string, brand?: string, partNumber?: string): number {
     let score = 0;
+    const normProductNumber = this.normalizeString(product.partNumber);
+    const normProductName = this.normalizeString(product.name);
+    const normProductDesc = this.normalizeString(product.description);
 
-    // Exact part number match gets highest score
-    if (params.partNumber && product.partNumber.toLowerCase() === params.partNumber.toLowerCase()) {
-      score += 1000;
+    if (partNumber) {
+      const normPartNumber = this.normalizeString(partNumber);
+      if (normProductNumber.includes(normPartNumber)) {
+        score += 500;
+        if (normProductNumber === normPartNumber) {
+          score += 500;
+        }
+      }
     }
 
-    // Partial part number match
-    if (params.partNumber && product.partNumber.toLowerCase().includes(params.partNumber.toLowerCase())) {
-      score += 500;
+    if (query) {
+      const normQuery = this.normalizeString(query);
+      if (normProductName.includes(normQuery)) {
+        score += 100;
+      }
+      if (normProductDesc.includes(normQuery)) {
+        score += 50;
+      }
     }
 
-    // Query term matching in name (higher weight)
-    if (params.query) {
-      const queryTerms = params.query.toLowerCase().split(' ');
-      const nameMatches = queryTerms.filter(term => 
-        product.name.toLowerCase().includes(term)
-      ).length;
-      score += nameMatches * 100;
-
-      // Query term matching in description (lower weight)
-      const descMatches = queryTerms.filter(term => 
-        product.description.toLowerCase().includes(term)
-      ).length;
-      score += descMatches * 50;
-    }
-
-    // Brand preference
-    if (params.brand && product.brand.toLowerCase().includes(params.brand.toLowerCase())) {
+    if (brand && this.normalizeString(product.brand).includes(this.normalizeString(brand))) {
       score += 200;
     }
 
-    // Availability bonus (in-stock items get priority)
     if (product.availability === 'in-stock') {
       score += 100;
-    } else if (product.availability === 'backordered') {
-      score += 25;
-    }
-
-    // Installation difficulty (easier installations get slight bonus for user experience)
-    if (product.installationDifficulty === 'easy') {
-      score += 10;
-    } else if (product.installationDifficulty === 'medium') {
-      score += 5;
     }
 
     return score;
   }
 
   /**
-   * Generate search suggestions when no results found
+   * Generates search suggestions for when no results are found.
+   * @private
    */
   private generateSuggestions(params: ProductSearchParams): string[] {
     const suggestions: string[] = [];
 
     if (params.partNumber) {
-      suggestions.push(`Try searching without the full part number: "${params.partNumber.slice(0, -2)}"`);
-      suggestions.push('Check if the part number is correct and complete');
-      suggestions.push('Try searching by product name instead of part number');
+      suggestions.push(`Try searching by product name instead of part number.`);
+      suggestions.push('Check if the part number is correct and complete.');
     }
 
     if (params.query) {
-      suggestions.push('Try using different keywords or synonyms');
-      suggestions.push('Search by brand name (Whirlpool, GE, Frigidaire, etc.)');
-      suggestions.push('Include the appliance type (refrigerator or dishwasher)');
+      suggestions.push('Try using different keywords or synonyms.');
+      suggestions.push('Search by brand name (Whirlpool, GE, etc.).');
     }
 
-    if (params.brand && params.category) {
-      suggestions.push(`Browse all ${params.category} parts`);
-      suggestions.push(`Search for ${params.brand} parts without other filters`);
-    }
+    suggestions.push('Try browsing by category (refrigerator or dishwasher).');
 
-    // General suggestions
-    suggestions.push('Try browsing by category (refrigerator or dishwasher)');
-    suggestions.push('Contact our support team for assistance finding the right part');
-
-    return suggestions.slice(0, 3); // Limit to 3 suggestions
+    return suggestions;
   }
 
   /**
-   * Get service statistics
+   * Normalizes a string by converting it to lowercase and removing non-alphanumeric characters.
+   * @private
    */
-  public getStats() {
-    const categoryStats = this.products.reduce((acc, product) => {
-      acc[product.category] = (acc[product.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  private normalizeString(str: string): string {
+    return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
 
-    const brandStats = this.products.reduce((acc, product) => {
-      acc[product.brand] = (acc[product.brand] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  /**
+   * Normalizes a model number to handle common variations.
+   * @private
+   */
+  private normalizeModel(model: string): string {
+    return this.normalizeString(model.replace(/-\d+$/, '')); // Removes trailing digits after a dash, e.g., 'W123456-7' -> 'W123456'
+  }
 
-    const availabilityStats = this.products.reduce((acc, product) => {
-      acc[product.availability] = (acc[product.availability] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  /**
+   * Determines if a user should contact a professional based on troubleshooting data.
+   * @private
+   */
+  private shouldContactProfessional(symptom: any): boolean {
+    return symptom.diagnosticSteps.length > 5 || this.normalizeString(symptom.description).includes('electrical');
+  }
 
-    return {
-      totalProducts: this.products.length,
-      categoryBreakdown: categoryStats,
-      brandBreakdown: brandStats,
-      availabilityBreakdown: availabilityStats,
-      troubleshootingSymptoms: troubleshootingSymptoms.length
-    };
+  /**
+   * Provides a reason for why a professional should be contacted.
+   * @private
+   */
+  private getProfessionalContactReason(symptom: any): string | undefined {
+    if (symptom.diagnosticSteps.length > 5) {
+      return 'Complex repair requiring multiple diagnostic steps.';
+    }
+    if (this.normalizeString(symptom.description).includes('electrical')) {
+      return 'Electrical repairs should be performed by qualified technicians.';
+    }
+    return undefined;
   }
 }

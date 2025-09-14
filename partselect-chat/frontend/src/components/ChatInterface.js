@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Wifi, WifiOff } from 'lucide-react';
-import { useSocket } from '../hooks/useSocket';
+import { Send, Bot, User, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { sendChatMessage, checkHealth } from '../api/api';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
@@ -13,10 +13,10 @@ const ChatInterface = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState(null);
   const [sessionId] = useState(() => 'session_' + Date.now());
   const messagesEndRef = useRef(null);
-  
-  const { sendMessage, onMessage, offMessage, isConnected } = useSocket();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,44 +24,69 @@ const ChatInterface = () => {
 
   useEffect(scrollToBottom, [messages]);
 
-  // Set up Socket.io message listener
+  // Check backend health on component mount
   useEffect(() => {
-    const handleAIResponse = (response) => {
-      const aiMessage = {
-        id: response.id,
-        role: 'assistant',
-        content: response.content,
-        timestamp: new Date(response.timestamp),
-        metadata: response.metadata
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
+    const checkBackendHealth = async () => {
+      const healthy = await checkHealth();
+      setIsConnected(healthy);
     };
 
-    onMessage(handleAIResponse);
-
-    return () => {
-      offMessage(handleAIResponse);
-    };
-  }, [onMessage, offMessage]);
+    checkBackendHealth();
+    
+    // Check health every 30 seconds
+    const healthInterval = setInterval(checkBackendHealth, 30000);
+    
+    return () => clearInterval(healthInterval);
+  }, []);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim() || !isConnected) return;
+    if (!inputMessage.trim() || isTyping) return;
 
+    const currentMessage = inputMessage;
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputMessage,
+      content: currentMessage,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
-    
-    // Send message via Socket.io
-    sendMessage(inputMessage, sessionId);
     setInputMessage('');
+    setIsTyping(true);
+    setError(null);
+    
+    try {
+      // Send message via HTTP API
+      const aiResponse = await sendChatMessage(currentMessage, sessionId);
+      
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: aiResponse.content,
+        timestamp: new Date(aiResponse.timestamp),
+        metadata: aiResponse.metadata,
+        products: aiResponse.products
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      setError(err.message);
+      
+      // Add error message to chat
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `I'm sorry, I encountered an error: ${err.message}. Please try again.`,
+        timestamp: new Date(),
+        isError: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -90,6 +115,17 @@ const ChatInterface = () => {
           </div>
         </div>
 
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400" />
+            <div>
+              <p className="text-sm font-medium text-red-800">Connection Error</p>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (
@@ -110,14 +146,31 @@ const ChatInterface = () => {
               <div className={`max-w-[70%] rounded-lg p-3 ${
                 message.role === 'user'
                   ? 'bg-partselect-blue text-white'
+                  : message.isError
+                  ? 'bg-red-50 text-red-800 border border-red-200'
                   : 'bg-gray-100 text-gray-800'
               }`}>
-                <p>{message.content}</p>
-                <span className={`text-xs ${
-                  message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                }`}>
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
+                <div className="prose prose-sm max-w-none">
+                  {message.content.split('\n').map((line, index) => (
+                    <p key={index} className={`${index === 0 ? '' : 'mt-2'} ${
+                      message.role === 'user' ? 'text-white' : message.isError ? 'text-red-800' : 'text-gray-800'
+                    }`}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className={`text-xs ${
+                    message.role === 'user' ? 'text-blue-100' : message.isError ? 'text-red-600' : 'text-gray-500'
+                  }`}>
+                    {message.timestamp.toLocaleTimeString()}
+                  </span>
+                  {message.metadata?.toolsUsed && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      Used: {message.metadata.toolsUsed.join(', ')}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -152,7 +205,7 @@ const ChatInterface = () => {
             />
             <button
               type="submit"
-              disabled={!inputMessage.trim() || isTyping || !isConnected}
+              disabled={!inputMessage.trim() || isTyping}
               className="partselect-button disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Send className="w-4 h-4" />

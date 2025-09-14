@@ -1,79 +1,110 @@
-import { Tool, ToolResult } from '../types';
+import { Tool, ToolResult, CompatibilityCheck } from '../types';
 import { SearchService } from '../services/SearchService';
-import { CompatibilityToolSchema } from '../data/schemas';
 
+// Note: Assuming tool schemas are managed centrally or in a file like this
+interface CompatibilityToolParameters {
+  partNumber: string;
+  modelNumber: string;
+}
+
+/**
+ * A tool to check the compatibility between a specific part and an appliance model.
+ * It queries the SearchService to determine compatibility and provides a clear summary
+ * and recommendation to the user.
+ */
 export class CompatibilityTool implements Tool {
+  /**
+   * The name of the tool, used by the agent to identify it.
+   */
   public readonly name = 'CompatibilityCheck';
-  public readonly description = 'Check if a specific part is compatible with an appliance model';
+
+  /**
+   * A detailed description of the tool's function.
+   */
+  public readonly description = 'Check if a specific part is compatible with an appliance model.';
+
+  /**
+   * The expected parameters for the tool, including their type and description.
+   */
   public readonly parameters = {
     partNumber: { type: 'string', description: 'Part number to check compatibility for', required: true },
     modelNumber: { type: 'string', description: 'Appliance model number', required: true }
   };
 
+  /**
+   * @param searchService - An instance of the SearchService to be used for data retrieval.
+   */
   constructor(private searchService: SearchService) {}
 
+  /**
+   * Executes the compatibility check based on provided parameters.
+   * @param parameters - A record of string keys and any values. Expected to contain `partNumber` and `modelNumber`.
+   * @returns A promise that resolves to a ToolResult object indicating success or failure.
+   */
   public async execute(parameters: Record<string, any>): Promise<ToolResult> {
-    try {
-      console.log('🔍 CompatibilityTool executing with parameters:', parameters);
+    const { partNumber, modelNumber } = parameters as CompatibilityToolParameters;
 
-      // Validate parameters
-      const validation = CompatibilityToolSchema.safeParse(parameters);
-      if (!validation.success) {
-        return {
-          success: false,
-          error: `Invalid parameters: ${validation.error.errors.map(e => e.message).join(', ')}`
-        };
-      }
+    console.log(`[CompatibilityTool] - Executing with parameters: Part Number: ${partNumber}, Model Number: ${modelNumber}`);
 
-      const { partNumber, modelNumber } = validation.data;
-
-      // Perform compatibility check
-      const compatibilityResult = await this.searchService.checkCompatibility(partNumber, modelNumber);
-
-      // Format result for agent
-      const formattedResult = {
-        compatibility: compatibilityResult,
-        summary: this.generateCompatibilitySummary(compatibilityResult),
-        recommendation: this.generateRecommendation(compatibilityResult)
+    if (!partNumber || !modelNumber) {
+      const error = 'Missing required parameters: partNumber and modelNumber.';
+      console.error(`[CompatibilityTool] - Execution failed: ${error}`);
+      return {
+        success: false,
+        error
       };
+    }
 
-      console.log(`✅ CompatibilityTool checked ${partNumber} with ${modelNumber}: ${compatibilityResult.isCompatible ? 'Compatible' : 'Not Compatible'}`);
+    try {
+      const compatibilityResult = await this.searchService.checkCompatibility(partNumber, modelNumber);
+      
+      const summary = this.generateCompatibilitySummary(compatibilityResult);
+      const recommendation = this.generateRecommendation(compatibilityResult);
 
+      console.log(`[CompatibilityTool] - Compatibility check complete. Result: Compatible: ${compatibilityResult.isCompatible}`);
+      
       return {
         success: true,
-        data: formattedResult,
+        data: { summary, recommendation },
         metadata: {
-          partNumber,
-          modelNumber,
-          isCompatible: compatibilityResult.isCompatible,
-          confidence: compatibilityResult.confidence
+          partNumber: compatibilityResult.partNumber,
+          modelNumber: compatibilityResult.modelNumber,
+          isCompatible: compatibilityResult.isCompatible
         }
       };
 
     } catch (error) {
-      console.error('❌ CompatibilityTool error:', error);
+      const errorMessage = `Failed to check compatibility: ${(error as Error).message}`;
+      console.error(`[CompatibilityTool] - Execution failed due to an exception: ${errorMessage}`);
       return {
         success: false,
-        error: `Compatibility check failed: ${(error as Error).message}`
+        error: errorMessage
       };
     }
   }
 
-  private generateCompatibilitySummary(result: any): string {
+  /**
+   * Generates a concise summary message based on the compatibility result.
+   * @param result - The compatibility check result object.
+   * @returns A string summary of the compatibility outcome.
+   */
+  private generateCompatibilitySummary(result: CompatibilityCheck): string {
     const { partNumber, modelNumber, isCompatible, confidence, reason } = result;
 
     if (isCompatible) {
-      const confidenceText = confidence >= 1.0 ? 'confirmed' : 
-                            confidence >= 0.8 ? 'highly likely' : 
-                            'possible';
-      
-      return `✅ **COMPATIBLE** - Part ${partNumber} is ${confidenceText} compatible with model ${modelNumber}. ${reason}`;
+      const confidenceText = confidence >= 1.0 ? 'confirmed' : 'likely';
+      return `COMPATIBLE - Part ${partNumber} is ${confidenceText} compatible with model ${modelNumber}. ${reason}`;
     } else {
-      return `❌ **NOT COMPATIBLE** - Part ${partNumber} is not compatible with model ${modelNumber}. ${reason}`;
+      return `NOT COMPATIBLE - Part ${partNumber} is not compatible with model ${modelNumber}. ${reason}`;
     }
   }
 
-  private generateRecommendation(result: any): string {
+  /**
+   * Generates a recommendation message for the user based on the compatibility result.
+   * @param result - The compatibility check result object.
+   * @returns A string recommendation for the next steps.
+   */
+  private generateRecommendation(result: CompatibilityCheck): string {
     const { isCompatible, alternativeParts } = result;
 
     if (isCompatible) {
@@ -81,13 +112,12 @@ export class CompatibilityTool implements Tool {
     } else {
       if (alternativeParts && alternativeParts.length > 0) {
         const alternatives = alternativeParts
-          .slice(0, 3)
-          .map((part: any) => `${part.name} (${part.partNumber}) - $${part.price}`)
+          .map(part => `${part.name} (${part.partNumber}) - $${part.price}`)
           .join(', ');
         
-        return `Consider these compatible alternatives: ${alternatives}. I recommend using the ProductSearch tool to find more compatible parts for your model.`;
+        return `Consider these compatible alternatives: ${alternatives}.`;
       } else {
-        return "No direct alternatives found in our database. I recommend searching for compatible parts using your model number, or contacting our support team for assistance.";
+        return "No direct alternatives found. I recommend searching for compatible parts using your model number or contacting support for assistance.";
       }
     }
   }

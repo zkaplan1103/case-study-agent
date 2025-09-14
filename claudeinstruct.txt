@@ -154,32 +154,32 @@ partselect-chat/
 
 ### Step 2.1: DeepSeek Service Implementation (45 minutes)
 
-**Objective**: Robust integration with DeepSeek API with intelligent fallbacks
+**Objective**: Simple, reliable integration with DeepSeek API following ALM patterns
 
-**Architecture Patterns**:
-- Strategy pattern for different response modes (API vs fallback)
-- Singleton pattern for service instance
-- Circuit breaker pattern for API resilience
-- Decorator pattern for request/response logging
+**Architecture Approach**:
+- Primary LLM (DeepSeek) for reasoning and coordination
+- External tools for factual tasks (search, compatibility, etc.)
+- Simple error handling when LLM unavailable
+- No complex fallback AI agents or rule-based systems
 
-**Implementation Approach**:
+**Implementation Strategy**:
 - Create service interface for dependency injection
-- Implement DeepSeek client using OpenAI SDK
-- Add comprehensive error handling with retries
-- Build intelligent fallback system for development
+- Implement DeepSeek client with standard HTTP calls
+- Clear error messages when API key not configured
+- Direct error reporting to users for service issues
 - Include request/response logging for debugging
 
-**Error Handling Strategy**:
-- Exponential backoff for rate limits
-- Graceful degradation when API unavailable
-- Clear error messages for different failure types
-- Fallback responses for development without API key
+**Error Handling Philosophy**:
+- Clear error messages when API key missing: "DeepSeek API is not configured. Please provide an API key to use AI features."
+- Service unavailable errors: "AI service is temporarily unavailable. Please try again later or contact support."
+- No complex circuit breakers or retry logic
+- No intelligent fallback responses or rule-based analysis
 
-**Fallback Intelligence**:
-- Parse user queries to determine intent
-- Generate contextual responses based on query type
-- Route to appropriate tools based on extracted parameters
-- Provide realistic sample responses for testing
+**Simplified Design**:
+- Single API call without complex retry patterns
+- Tools handle factual data retrieval and processing
+- LLM handles reasoning, synthesis, and natural language generation
+- Fail fast with clear error messages when LLM unavailable
 
 ### Step 2.2: ReAct Agent Architecture (45 minutes)
 
