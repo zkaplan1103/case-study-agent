@@ -1,16 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Wifi, WifiOff, AlertCircle, RotateCcw } from 'lucide-react';
 import { sendChatMessage, checkHealth } from '../api/api';
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your PartSelect AI assistant. I can help you find refrigerator and dishwasher parts, check compatibility, and provide installation guidance. How can I assist you today?',
-      timestamp: new Date()
+  // Load messages from localStorage or use default welcome message
+  const getInitialMessages = () => {
+    try {
+      const savedMessages = localStorage.getItem('partselect-chat-messages');
+      if (savedMessages) {
+        const parsed = JSON.parse(savedMessages);
+        // Convert timestamp strings back to Date objects
+        return parsed.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
     }
-  ]);
+    
+    // Default welcome message
+    return [
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'Hello! I\'m your PartSelect AI assistant. I can help you find refrigerator and dishwasher parts, check compatibility, and provide installation guidance. How can I assist you today?',
+        timestamp: new Date()
+      }
+    ];
+  };
+
+  const [messages, setMessages] = useState(getInitialMessages);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -23,6 +43,15 @@ const ChatInterface = () => {
   };
 
   useEffect(scrollToBottom, [messages]);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('partselect-chat-messages', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+    }
+  }, [messages]);
 
   // Check backend health on component mount
   useEffect(() => {
@@ -89,6 +118,16 @@ const ChatInterface = () => {
     }
   };
 
+  const clearChatHistory = () => {
+    const defaultMessage = {
+      id: '1',
+      role: 'assistant',
+      content: 'Hello! I\'m your PartSelect AI assistant. I can help you find refrigerator and dishwasher parts, check compatibility, and provide installation guidance. How can I assist you today?',
+      timestamp: new Date()
+    };
+    setMessages([defaultMessage]);
+  };
+
   return (
     <div className="partselect-container">
       <div className="partselect-card min-h-[600px] flex flex-col">
@@ -103,14 +142,26 @@ const ChatInterface = () => {
               <p className="text-gray-600 text-sm">Refrigerator & Dishwasher Parts Expert</p>
             </div>
             
-            {/* Connection Status */}
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-              isConnected 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
-            }`}>
-              {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-              {isConnected ? 'Connected' : 'Disconnected'}
+            <div className="flex items-center gap-3">
+              {/* Clear Chat Button */}
+              <button
+                onClick={clearChatHistory}
+                className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+                title="Clear chat history"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Clear Chat
+              </button>
+              
+              {/* Connection Status */}
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                isConnected 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </div>
             </div>
           </div>
         </div>

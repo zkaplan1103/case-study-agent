@@ -1,4 +1,4 @@
-import { Product, TroubleshootingSymptom, InstallationStep } from '../types';
+import { Product, TroubleshootingSymptom } from '../types';
 
 // Sample product data covering test cases and common scenarios
 export const sampleProducts: Product[] = [

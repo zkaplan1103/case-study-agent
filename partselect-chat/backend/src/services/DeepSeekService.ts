@@ -1,4 +1,5 @@
-import { DeepSeekMessage, DeepSeekResponse, LLMService, ServiceStatus, AgentAction, Tool, DeepSeekErrorResponse } from '../types';
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import { DeepSeekMessage, DeepSeekResponse, LLMService, ServiceStatus, DeepSeekErrorResponse } from '../types';
 
 interface DeepSeekConfig {
   apiKey?: string;
@@ -8,13 +9,6 @@ interface DeepSeekConfig {
   timeout?: number;
 }
 
-/**
- * A type guard to check if an unknown object conforms to the DeepSeekErrorResponse interface.
- * @param data The object to check.
- */
-function isDeepSeekErrorResponse(data: unknown): data is DeepSeekErrorResponse {
-  return typeof data === 'object' && data !== null && 'error' in data;
-}
 
 /**
  * A service to handle all interactions with the DeepSeek language model.
@@ -23,7 +17,8 @@ function isDeepSeekErrorResponse(data: unknown): data is DeepSeekErrorResponse {
  */
 export class DeepSeekService implements LLMService {
   private config: Required<DeepSeekConfig>;
-  
+  private axiosInstance: AxiosInstance;
+
   constructor(config: DeepSeekConfig = {}) {
     this.config = {
       apiKey: config.apiKey || process.env.DEEPSEEK_API_KEY || '',
@@ -32,15 +27,17 @@ export class DeepSeekService implements LLMService {
       temperature: config.temperature || 0.1,
       timeout: config.timeout || 30000
     };
+
+    this.axiosInstance = axios.create({
+      baseURL: this.config.baseUrl,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.apiKey}`
+      },
+      timeout: this.config.timeout,
+    });
   }
 
-  /**
-   * Checks if the LLM service is available for use.
-   * @returns A boolean indicating service availability.
-   */
-  public isAvailable(): boolean {
-    return !!this.config.apiKey;
-  }
 
   /**
    * Generates a natural language response from the DeepSeek model.
@@ -48,54 +45,18 @@ export class DeepSeekService implements LLMService {
    * @returns A promise that resolves to the generated response string.
    */
   public async generateResponse(messages: DeepSeekMessage[]): Promise<string> {
-    if (!this.isAvailable()) {
+    if (!this.config.apiKey) {
       throw new Error('AI service is not configured. An API key is required.');
     }
     
     try {
       const response = await this.callDeepSeekApi(messages);
       return response;
-    } catch (error) {
+    } catch (_error) {
       throw new Error('AI service is temporarily unavailable. Please try again later.');
     }
   }
 
-  /**
-   * Instructs the LLM to select a tool and its parameters based on a user's query.
-   * @param userMessage The user's message.
-   * @param tools An array of available tools with their descriptions and parameters.
-   * @returns A promise that resolves to an AgentAction object or null.
-   */
-  public async generateToolAction(userMessage: string, tools: Tool[]): Promise<AgentAction | null> {
-    const systemPrompt = this.getToolSelectionPrompt(tools);
-    
-    const messages: DeepSeekMessage[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ];
-
-    try {
-      const response = await this.callDeepSeekApi(messages);
-      const toolDecision = JSON.parse(response.trim());
-      
-      if (!toolDecision || toolDecision.tool === undefined) {
-        throw new Error('Invalid or empty tool decision from AI.');
-      }
-
-      if (toolDecision.tool === null) {
-        return null;
-      }
-      
-      return {
-        tool: toolDecision.tool,
-        parameters: toolDecision.parameters || {},
-        reasoning: toolDecision.reasoning || 'Tool selected by AI reasoning.'
-      };
-      
-    } catch (error) {
-      throw new Error('Failed to parse tool selection from AI response.');
-    }
-  }
 
   /**
    * Private method to handle the API call to DeepSeek.
@@ -103,72 +64,41 @@ export class DeepSeekService implements LLMService {
    * @returns A promise that resolves to the raw content from the API.
    */
   private async callDeepSeekApi(messages: DeepSeekMessage[]): Promise<string> {
-    const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`
-      },
-      body: JSON.stringify({
+    try {
+      const response = await this.axiosInstance.post<DeepSeekResponse>('/chat/completions', {
         model: 'deepseek-chat',
         messages: messages,
         max_tokens: this.config.maxTokens,
         temperature: this.config.temperature,
         stream: false
-      }),
-      signal: AbortSignal.timeout(this.config.timeout)
-    });
-    
-    if (!response.ok) {
-      const errorData: unknown = await response.json().catch(() => ({}));
-      if (isDeepSeekErrorResponse(errorData) && errorData.error?.message) {
-        throw new Error(`API error: ${response.status} - ${errorData.error.message}`);
+      });
+      
+      const data = response.data;
+      
+      if (!data || !('choices' in data) || !Array.isArray(data.choices) || data.choices.length === 0 || !data.choices[0].message || !('content' in data.choices[0].message)) {
+        throw new Error('Empty or invalid response from AI service.');
       }
-      throw new Error(`API error: ${response.status} - Unknown error`);
+      
+      return data.choices[0].message.content.trim();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<DeepSeekErrorResponse>;
+        if (axiosError.response?.data?.error?.message) {
+          throw new Error(`API error: ${axiosError.response.status} - ${axiosError.response.data.error.message}`);
+        }
+        throw new Error(`API error: ${axiosError.response?.status} - Unknown error`);
+      }
+      throw error;
     }
-    
-    const data: unknown = await response.json();
-    
-    if (!data || typeof data !== 'object' || !('choices' in data) || !Array.isArray(data.choices) || data.choices.length === 0 || !('message' in data.choices[0]) || !data.choices[0].message || typeof data.choices[0].message !== 'object' || !('content' in data.choices[0].message)) {
-      throw new Error('Empty or invalid response from AI service.');
-    }
-    
-    return (data as DeepSeekResponse).choices[0].message.content.trim();
   }
 
-  /**
-   * Creates the system prompt that instructs the LLM on how to select a tool.
-   * @private
-   */
-  private getToolSelectionPrompt(tools: Tool[]): string {
-    const toolDescriptions = tools.map(tool => 
-      `- ${tool.name}: ${tool.description}\n  Parameters: ${JSON.stringify(tool.parameters)}`
-    ).join('\n');
-    
-    return `You are an AI assistant responsible for selecting the correct tool to answer a user's query. You have access to the following tools:
-${toolDescriptions}
-
-Based on the user's message, you must respond with ONLY a single, valid JSON object specifying the tool to use.
-The JSON object should have the following structure:
-{
-  "tool": "ToolName",
-  "parameters": { /* parameters for the tool */ },
-  "reasoning": "A brief explanation of why you chose this specific tool."
-}
-
-If no tool is appropriate for the user's query, respond with:
-{
-  "tool": null,
-  "reasoning": "No relevant tool was found for the user's request."
-}`;
-  }
 
   /**
    * Provides the health status of the service.
    * @returns A ServiceStatus object.
    */
   public getStatus(): ServiceStatus {
-    const configured = this.isAvailable();
+    const configured = !!this.config.apiKey;
     return {
       status: configured ? 'healthy' : 'unhealthy',
       configured: configured,

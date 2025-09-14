@@ -1,4 +1,4 @@
-import { Tool, ToolResult, ProductSearchParams, SearchResult, Product } from '../types';
+import { Tool, ToolResult, ProductSearchParams, SearchResult } from '../types';
 import { SearchService } from '../services/SearchService';
 
 // Note: Using a type alias for clarity on the expected parameters
@@ -83,7 +83,7 @@ export class ProductSearchTool implements Tool {
    * @param searchParams - The original search parameters.
    * @returns A string summary of the search outcome.
    */
-  private generateSearchSummary(searchResult: SearchResult, searchParams: ProductSearchParams): string {
+  private generateSearchSummary(searchResult: SearchResult, _searchParams: ProductSearchParams): string {
     const { products, totalCount, searchTerms } = searchResult;
 
     if (totalCount === 0) {

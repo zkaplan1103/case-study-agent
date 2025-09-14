@@ -4,8 +4,7 @@ import {
   AgentObservation,
   ChatMessage,
   Tool,
-  LLMService,
-  DeepSeekMessage
+  LLMService
 } from '../types';
 
 /**
@@ -127,7 +126,7 @@ export abstract class BaseAgent {
   protected abstract generateFinalResponse(userMessage: string, context: ChatMessage[], observation?: AgentObservation): Promise<{ response: string; products?: any[]; }>;
   protected abstract getSystemPrompt(): string;
 
-  protected generateErrorResponse(errorMessage: string): string {
+  protected generateErrorResponse(_errorMessage: string): string {
     return `I apologize, but I encountered an error and am unable to complete your request at this time. Please try again later.`;
   }
 }

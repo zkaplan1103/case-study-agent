@@ -35,14 +35,51 @@ export class PartSelectAgent extends BaseAgent {
    * Asks the LLM to decide which tool to use based on the user's message.
    * The logic is now cleaner and the prompt generation is offloaded to the LLM service.
    */
-  protected async generateAction(userMessage: string, context: ChatMessage[]): Promise<AgentAction | null> {
+  protected async generateAction(userMessage: string, _context: ChatMessage[]): Promise<AgentAction | null> {
+    const tools = this.getToolDescriptions();
+    const toolDescriptions = tools.map(tool => 
+      `- ${tool.name}: ${tool.description}\n  Parameters: ${JSON.stringify(tool.parameters)}`
+    ).join('\n');
+
+    const messages: DeepSeekMessage[] = [
+      {
+        role: 'system',
+        content: `You are a PartSelect AI assistant. Based on the user's message, decide which tool to use.
+
+Available tools:
+${toolDescriptions}
+
+Respond with ONLY a JSON object:
+{
+  "tool": "ToolName",
+  "parameters": { /* parameters */ },
+  "reasoning": "Why this tool was chosen"
+}
+
+If no tool is needed, respond with: {"tool": null}`
+      },
+      {
+        role: 'user',
+        content: userMessage
+      }
+    ];
+
     try {
-      // The generateToolAction method will be defined in the DeepSeekService
-      const response = await this.llmService.generateToolAction(userMessage, this.getToolDescriptions());
-      return response;
+      const response = await this.llmService.generateResponse(messages);
+      const decision = JSON.parse(response.trim());
+
+      if (!decision.tool || decision.tool === null) {
+        return null;
+      }
+
+      return {
+        tool: decision.tool,
+        parameters: decision.parameters || {},
+        reasoning: decision.reasoning || 'Tool selected by DeepSeek'
+      };
     } catch (error) {
       console.error('Error getting tool decision from LLM:', error);
-      return null;
+      throw error;
     }
   }
 
@@ -50,7 +87,7 @@ export class PartSelectAgent extends BaseAgent {
    * Generates the final, user-facing response by providing the LLM with the
    * original message and the results from any tools that were executed.
    */
-  protected async generateFinalResponse(userMessage: string, context: ChatMessage[], observation?: AgentObservation): Promise<{ response: string; products?: any[]; }> {
+  protected async generateFinalResponse(userMessage: string, _context: ChatMessage[], observation?: AgentObservation): Promise<{ response: string; products?: any[]; }> {
     const products = this.extractProducts(observation ? [observation] : []);
 
     const messages: DeepSeekMessage[] = [

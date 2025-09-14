@@ -156,8 +156,6 @@ export interface DeepSeekErrorResponse {
 
 export interface LLMService {
   generateResponse(messages: DeepSeekMessage[]): Promise<string>;
-  isAvailable(): boolean;
-  generateToolAction(userMessage: string, tools: Tool[]): Promise<AgentAction | null>;
   getStatus(): ServiceStatus;
 }
 

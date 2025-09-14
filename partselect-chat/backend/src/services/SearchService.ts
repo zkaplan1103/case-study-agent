@@ -19,7 +19,7 @@ export class SearchService {
    * @returns A promise that resolves to a SearchResult object.
    */
   public async searchProducts(params: ProductSearchParams): Promise<SearchResult> {
-    const { query, partNumber, brand, category, priceRange, availability, offset = 0, limit = 10 } = params;
+    const { partNumber, brand, category, priceRange, availability, offset = 0, limit = 10 } = params;
     let results = [...this.products];
     const searchTerms: string[] = [];
 
