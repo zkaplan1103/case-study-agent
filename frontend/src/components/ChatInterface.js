@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Wifi, WifiOff, AlertCircle, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Bot, User, WifiOff, AlertCircle, RotateCcw } from 'lucide-react';
 import { sendChatMessage, checkHealth } from '../api/api';
 
 const ChatInterface = () => {
@@ -34,30 +34,41 @@ const ChatInterface = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [showDisconnectionAlert, setShowDisconnectionAlert] = useState(false);
   const [error, setError] = useState(null);
   const [sessionId] = useState(() => 'session_' + Date.now());
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
-  useEffect(scrollToBottom, [messages]);
-
-  // Save messages to localStorage whenever they change
+  // Combined effect for messages: scroll and save to localStorage
   useEffect(() => {
+    scrollToBottom();
     try {
       localStorage.setItem('partselect-chat-messages', JSON.stringify(messages));
     } catch (error) {
       console.error('Error saving chat history:', error);
     }
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   // Check backend health on component mount
   useEffect(() => {
     const checkBackendHealth = async () => {
       const healthy = await checkHealth();
+      const wasConnected = isConnected;
       setIsConnected(healthy);
+      
+      if (healthy) {
+        console.log('Connected to PartSelect Chat Backend');
+        setShowDisconnectionAlert(false);
+      } else {
+        console.log('Disconnected from PartSelect Chat Backend');
+        if (wasConnected) {
+          setShowDisconnectionAlert(true);
+        }
+      }
     };
 
     checkBackendHealth();
@@ -66,9 +77,9 @@ const ChatInterface = () => {
     const healthInterval = setInterval(checkBackendHealth, 30000);
     
     return () => clearInterval(healthInterval);
-  }, []);
+  }, [isConnected]);
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = useCallback(async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || isTyping) return;
 
@@ -86,6 +97,13 @@ const ChatInterface = () => {
     setError(null);
     
     try {
+      // Console log user message for context
+      console.group('User Message Sent');
+      console.log('Message:', currentMessage);
+      console.log('Session ID:', sessionId);
+      console.log('Timestamp:', new Date().toISOString());
+      console.groupEnd();
+      
       // Send message via HTTP API
       const aiResponse = await sendChatMessage(currentMessage, sessionId);
       
@@ -116,9 +134,9 @@ const ChatInterface = () => {
     } finally {
       setIsTyping(false);
     }
-  };
+  }, [inputMessage, isTyping, sessionId]);
 
-  const clearChatHistory = () => {
+  const clearChatHistory = useCallback(() => {
     const defaultMessage = {
       id: '1',
       role: 'assistant',
@@ -126,7 +144,7 @@ const ChatInterface = () => {
       timestamp: new Date()
     };
     setMessages([defaultMessage]);
-  };
+  }, []);
 
   return (
     <div className="partselect-container">
@@ -152,16 +170,6 @@ const ChatInterface = () => {
                 <RotateCcw className="w-4 h-4" />
                 Clear Chat
               </button>
-              
-              {/* Connection Status */}
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                isConnected 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-red-100 text-red-700'
-              }`}>
-                {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-                {isConnected ? 'Connected' : 'Disconnected'}
-              </div>
             </div>
           </div>
         </div>
@@ -173,6 +181,27 @@ const ChatInterface = () => {
             <div>
               <p className="text-sm font-medium text-red-800">Connection Error</p>
               <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Disconnection Alert Popup */}
+        {showDisconnectionAlert && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <WifiOff className="w-6 h-6 text-red-500" />
+                <h3 className="text-lg font-semibold text-gray-900">Backend Disconnected</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Lost connection to the PartSelect Chat Backend. Please check your internet connection or try refreshing the page.
+              </p>
+              <button
+                onClick={() => setShowDisconnectionAlert(false)}
+                className="w-full bg-partselect-blue text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         )}
@@ -216,11 +245,6 @@ const ChatInterface = () => {
                   }`}>
                     {message.timestamp.toLocaleTimeString()}
                   </span>
-                  {message.metadata?.toolsUsed && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      Used: {message.metadata.toolsUsed.join(', ')}
-                    </span>
-                  )}
                 </div>
               </div>
             </div>

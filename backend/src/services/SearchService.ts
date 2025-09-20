@@ -1,4 +1,4 @@
-import { Product, ProductSearchParams, SearchResult, CompatibilityCheck, TroubleshootingResult } from '../types';
+import { Product, ProductSearchParams, SearchResult, CompatibilityCheck, TroubleshootingResult, TroubleshootingSymptom } from '../types';
 import { sampleProducts, troubleshootingSymptoms } from '../data/sampleProducts';
 
 /**
@@ -292,7 +292,7 @@ export class SearchService {
    * Determines if a user should contact a professional based on troubleshooting data.
    * @private
    */
-  private shouldContactProfessional(symptom: any): boolean {
+  private shouldContactProfessional(symptom: TroubleshootingSymptom): boolean {
     return symptom.diagnosticSteps.length > 5 || this.normalizeString(symptom.description).includes('electrical');
   }
 
@@ -300,7 +300,7 @@ export class SearchService {
    * Provides a reason for why a professional should be contacted.
    * @private
    */
-  private getProfessionalContactReason(symptom: any): string | undefined {
+  private getProfessionalContactReason(symptom: TroubleshootingSymptom): string | undefined {
     if (symptom.diagnosticSteps.length > 5) {
       return 'Complex repair requiring multiple diagnostic steps.';
     }

@@ -1,4 +1,4 @@
-// partselect-chat/backend/src/server.ts
+// backend/src/server.ts
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
@@ -90,6 +90,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Simple in-memory rate limiting store
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+// Periodic cleanup of expired rate limit entries to prevent memory leaks
+const cleanupRateLimit = () => {
+  const now = Date.now();
+  for (const [clientId, data] of rateLimitStore.entries()) {
+    if (now > data.resetTime) {
+      rateLimitStore.delete(clientId);
+    }
+  }
+};
+
+// Run cleanup every 5 minutes
+setInterval(cleanupRateLimit, 5 * 60 * 1000);
 
 // Rate limiting middleware to prevent abuse
 const rateLimit = (req: Request, res: Response, next: NextFunction) => {
