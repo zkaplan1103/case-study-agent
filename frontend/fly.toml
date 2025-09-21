@@ -1,0 +1,29 @@
+# fly.toml app configuration file generated for partselect-frontend
+app = "partselect-frontend"
+primary_region = "dfw"
+
+[build]
+  [build.args]
+    REACT_APP_API_URL = "https://partselect-backend.fly.dev"
+
+[env]
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/health"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

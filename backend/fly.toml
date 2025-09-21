@@ -1,0 +1,33 @@
+# fly.toml app configuration file generated for partselect-backend
+app = "partselect-backend"
+primary_region = "dfw"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+  RATE_LIMIT_WINDOW_MS = "900000"
+  RATE_LIMIT_MAX_REQUESTS = "100"
+  DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+  CORS_ORIGINS = "https://partselect-frontend.fly.dev"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/health"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
